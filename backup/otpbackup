@@ -1,0 +1,383 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import '../theme/app_theme.dart';
+import '../theme/app_constants.dart';
+
+class OTPScreen extends StatefulWidget {
+  const OTPScreen({super.key});
+
+  @override
+  State<OTPScreen> createState() => _OtpScreenState();
+}
+
+class _OtpScreenState extends State<OTPScreen> {
+  // 4 controllers + 4 focus nodes for each OTP digit
+  final List<TextEditingController> _controllers =
+      List.generate(4, (_) => TextEditingController());
+  final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
+
+  String _phoneNumber = '';
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Get phone number passed from signin/signup
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args != null) {
+      _phoneNumber = args.toString();
+    }
+  }
+
+  @override
+  void dispose() {
+    for (final c in _controllers) {
+      c.dispose();
+    }
+    for (final f in _focusNodes) {
+      f.dispose();
+    }
+    super.dispose();
+  }
+
+  void _onDigitChanged(String value, int index) {
+    if (value.isNotEmpty) {
+      // Move focus to next field
+      if (index < 3) {
+        _focusNodes[index + 1].requestFocus();
+      } else {
+        _focusNodes[index].unfocus();
+      }
+    } 
+  }
+
+  bool get _isOtpComplete =>
+      _controllers.every((c) => c.text.isNotEmpty);
+
+  void _onContinue() {
+    if (_isOtpComplete) {
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    }
+  }
+
+  void _onResend() {
+    // Clear all fields and refocus first
+    for (final c in _controllers) {
+      c.clear();
+    }
+    _focusNodes[0].requestFocus();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final topHeight = size.height * 0.26;
+
+    return Scaffold(
+      backgroundColor: AppColors.navyBlue,
+      resizeToAvoidBottomInset: true,
+      body: Column(
+        children: [
+          // ── Top image with title overlay ──
+          SizedBox(
+            height: topHeight,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Sport photo
+                Image.asset(
+                  AppImages.otpTop,
+                  fit: BoxFit.cover,
+                  alignment: Alignment.topCenter,
+                ),
+
+
+                // Brush stroke overlay at bottom
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: Image.asset(
+                    AppImages.signTopOverlay,
+                    fit: BoxFit.fitWidth,
+                    width: double.infinity,
+                  ),
+                ),
+
+                // Back button
+                Positioned(
+                  top: MediaQuery.of(context).padding.top + 12,
+                  left: 16,
+                  child: GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: Container(
+                      width: 48,
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.20),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: AppColors.limeGreen,
+                        size: 20,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Title block
+                Positioned(
+                  bottom: 20,
+                  left: 0,
+                  right: 0,
+                  child: Column(
+                  
+                    children: [
+                      
+                      Text(
+                        "Enter",
+                        style: TextStyle(
+                          fontFamily: 'AtlanticBentley',
+                          fontSize: 25,
+                          color: AppColors.brightLimeGreen,
+                          height: 0.2,
+                        ),
+                      ),
+                      Text(
+                        'OTP',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontFamily: 'Anton',
+                          fontSize: 25,
+                          color: AppColors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      // Subtitle with phone number highlighted
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 32),
+                        child: RichText(
+                          textAlign: TextAlign.center,
+                          
+                          text: TextSpan(
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 14,
+                              height: 1.5,
+                              color: AppColors.white,
+                            ),
+                            children: [
+                              const TextSpan(
+                                  text:
+                                      'We have just sent you 4 digit code via your phone '),
+                              TextSpan(
+                                text: _phoneNumber.isEmpty
+                                    ? '+91 99988 77755'
+                                    : _phoneNumber,
+                                style: TextStyle(
+                                  color: AppColors.brightLimeGreen,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Bottom OTP form ──
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(32, 36, 32, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  // ── 4 OTP digit boxes ──
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: List.generate(4, (index) {
+                      return _OtpBox(
+                        controller: _controllers[index],
+                        focusNode: _focusNodes[index],
+                        onChanged: (val) => _onDigitChanged(val, index),
+                        // Handle backspace on empty field
+                        onBackspace: () {
+                         if (_controllers[index].text.isEmpty && index > 0) {
+                            _controllers[index - 1].clear(); // ← clear previous
+                            _focusNodes[index - 1].requestFocus(); // ← move focus back
+                          }
+                        },
+                      );
+                    }),
+                  ),
+                  const SizedBox(height: 40),
+
+                  // Continue button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: _onContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.limeGreen,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Continue',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 16,
+                              letterSpacing: 1,
+                              fontWeight: FontWeight.w400,
+                              color: AppColors.white,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          const Icon(
+                            Icons.arrow_outward_rounded,
+                            size: 20,
+                            color: AppColors.white,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Resend code
+                  GestureDetector(
+                    onTap: _onResend,
+                    child: RichText(
+                      text: TextSpan(
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.white,
+                          letterSpacing: 0.2,
+                        ),
+                        children: [
+                          const TextSpan(text: "Didn't receive code? "),
+                          TextSpan(
+                            text: 'Resend Code',
+                            style: TextStyle(
+                              color: AppColors.limeGreen,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+class _OtpBox extends StatefulWidget {
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final ValueChanged<String> onChanged;
+  final VoidCallback onBackspace;
+
+  const _OtpBox({
+    required this.controller,
+    required this.focusNode,
+    required this.onChanged,
+    required this.onBackspace,
+  });
+
+  @override
+  State<_OtpBox> createState() => _OtpBoxState();
+}
+
+class _OtpBoxState extends State<_OtpBox> {
+  void _rebuild() => setState(() {});
+
+  @override
+  void initState() {
+    super.initState();
+    widget.focusNode.addListener(_rebuild); // ← rebuilds when focus changes
+  }
+
+  @override
+  void dispose() {
+    widget.focusNode.removeListener(_rebuild);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isFocused = widget.focusNode.hasFocus; // ← true only on active box
+
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: KeyboardListener(
+        focusNode: FocusNode(),
+        onKeyEvent: (event) {
+          if (event is KeyDownEvent &&
+              event.logicalKey == LogicalKeyboardKey.backspace &&
+              widget.controller.text.isEmpty) {
+            widget.onBackspace();
+          }
+        },
+        child: TextField(
+          controller: widget.controller,
+          focusNode: widget.focusNode,
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          maxLength: 1,
+          onChanged: widget.onChanged,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: isFocused
+                ? AppColors.white                         // active box → full white
+                : AppColors.white.withValues(alpha: 0.5), // others → half white
+          ),
+          decoration: InputDecoration(
+            counterText: '',
+            filled: true,
+            fillColor: AppColors.white.withValues(alpha: 0.08),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: AppColors.white.withValues(alpha: 0.15),
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: BorderSide(
+                color: AppColors.white.withValues(alpha: 0.15),
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(
+                color: AppColors.limeGreen,
+                width: 1.5,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

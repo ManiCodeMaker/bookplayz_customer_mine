@@ -1,0 +1,814 @@
+import 'package:bookplayz/widgets/bottom_nav_screen.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:smooth_page_indicator/smooth_page_indicator.dart';
+import '../../theme/app_theme.dart';
+import '../../theme/app_constants.dart';
+
+class UserHomeScreen extends StatefulWidget {
+  const UserHomeScreen({super.key});
+
+  @override
+  State<UserHomeScreen> createState() => _UserHomeScreenState();
+}
+
+class _UserHomeScreenState extends State<UserHomeScreen> {
+  int _navIndex = 0;
+  final PageController _heroController = PageController();
+  int _activeSport = 0;
+  final ScrollController _scrollController = ScrollController();
+
+  final List<Map<String, String>> _sports = [
+    {'label': 'FOOTBALL', 'icon': AppImages.sportFootball},
+    {'label': 'CRICKET', 'icon': AppImages.sportCricket},
+    {'label': 'TENNIS', 'icon': AppImages.sportTennis},
+    {'label': 'SHUTTLE', 'icon': AppImages.sportShuttle},
+    {'label': 'SWIMMING', 'icon': AppImages.sportSwimming},
+    {'label': 'VOLLEYBALL', 'icon': AppImages.sportVolleyball},
+    {'label': 'BASKETBALL', 'icon': AppImages.sportBasketball},
+    {'label': 'TABLE TENNIS', 'icon': AppImages.sportTableTennis},
+  ];
+
+  final List<Map<String, dynamic>> _venues = [
+    {
+      'name': 'Venue Near KY',
+      'sport': 'Foot Ball',
+      'distance': '25 mins',
+      'discount': '70% OFF',
+      'image': AppImages.venueHero,
+    },
+    {
+      'name': 'Cricket Arena',
+      'sport': 'Cricket',
+      'distance': '15 mins',
+      'discount': '50% OFF',
+      'image': AppImages.venueHero,
+    },
+    {
+      'name': 'Tennis Court Pro',
+      'sport': 'Tennis',
+      'distance': '10 mins',
+      'discount': '30% OFF',
+      'image': AppImages.venueHero,
+    },
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _heroController.dispose();
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.darkNavy,
+      extendBody: false, // content extends behind nav
+      body: Stack(
+        children: [
+          // ── Main scrollable content ──
+          CustomScrollView(
+            controller: _scrollController,
+            slivers: [
+              // ── Hero banner (extends behind status bar) ──
+              SliverToBoxAdapter(child: _buildHero(context)),
+
+              // ── Popular Venues title ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                  child: Column(
+                    children: [
+                      Text(
+                        'Popular Venues',
+                        style: TextStyle(
+                          fontFamily: 'AtlanticBentley',
+                          fontSize: 20,
+                          color: AppColors.limeGreen,
+                          height: 1.0,
+                        ),
+                      ),
+                      Text(
+                        'Around You',
+                        style: TextStyle(
+                          fontFamily: 'Anton',
+                          fontSize: 24,
+                          color: AppColors.white,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Sport filter icons ──
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 100,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _sports.length,
+                    separatorBuilder: (_, __) => const SizedBox(width: 10),
+                    itemBuilder: (_, i) {
+                      final isActive = _activeSport == i;
+                      return GestureDetector(
+                        onTap: () => setState(() => _activeSport = i),
+                        child: _SportFilterCard(
+                          label: _sports[i]['label']!,
+                          icon: _sports[i]['icon']!,
+                          isActive: isActive,
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // ── Map banner ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: _MapBanner(),
+                ),
+              ),
+
+              // ── Filter chips ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _FilterChip(label: 'Price', icon: Icons.swap_vert_rounded),
+                        const SizedBox(width: 10),
+                        _FilterChip(label: 'Sport', hasDropdown: true),
+                        const SizedBox(width: 10),
+                        _FilterChip(label: 'Distance', hasDropdown: true),
+                        const SizedBox(width: 10),
+                        _FilterChip(label: 'Popular', icon: Icons.swap_vert_rounded),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              // ── Venues header ──
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Venues',
+                        style: TextStyle(
+                          fontFamily: 'Jost',
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.white,
+                        ),
+                      ),
+                      Text(
+                        'See All',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.limeGreen,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // ── Venue cards list ──
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (_, i) => Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                    child: _VenueCard(venue: _venues[i]),
+                  ),
+                  childCount: _venues.length,
+                ),
+              ),
+
+              // Bottom padding — so last item isn't hidden behind nav
+              const SliverToBoxAdapter(
+                child: SizedBox(height: 110),
+              ),
+            ],
+          ),
+        ],
+      ),
+
+      // ── Bottom nav — floats above content, content never goes behind ──
+      bottomNavigationBar: UserBottomNav(
+        currentIndex: _navIndex,
+        onTap: (i) => setState(() => _navIndex = i),
+      ),
+    );
+  }
+
+  Widget _buildHero(BuildContext context) {
+    return SizedBox(
+      height: 380,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Hero image carousel — extends behind status bar
+          PageView.builder(
+            controller: _heroController,
+            itemCount: 3,
+            itemBuilder: (_, __) => Image.asset(
+              AppImages.userHero,
+              fit: BoxFit.cover,
+              alignment: Alignment.topCenter,
+            ),
+          ),
+
+          // Dark gradient overlay — top and bottom
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.black.withValues(alpha: 0.55),
+                  Colors.black.withValues(alpha: 0.15),
+                  AppColors.darkNavy.withValues(alpha: 0.85),
+                ],
+                stops: const [0.0, 0.45, 1.0],
+              ),
+            ),
+          ),
+
+          // ── Top header (on top of hero) ──
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 8,
+            left: 16,
+            right: 16,
+            child: Row(
+              children: [
+                // Hamburger
+                Container( 
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                        color: AppColors.white.withValues(alpha: 0.2)),
+                  ),
+                  child: const Icon(Icons.menu_rounded,
+                      color: AppColors.white, size: 20),
+                ),
+                const SizedBox(width: 10),
+
+                // Location
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.location_on_outlined,
+                              color: AppColors.limeGreen, size: 14),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Coimbatore, TN',
+                            style: TextStyle(
+                              fontFamily: 'Jost',
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.limeGreen,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Text(
+                        'Ramakrishna Nagar, Palanigoundan pudur...',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          color: AppColors.white.withValues(alpha: 0.7),
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Notification bell
+                Stack(
+                  children: [
+                    Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                            color: AppColors.white.withValues(alpha: 0.2)),
+                      ),
+                      child: const Icon(Icons.notifications_outlined,
+                          color: AppColors.white, size: 20),
+                    ),
+                    Positioned(
+                      right: 2,
+                      top: 2,
+                      child: Container(
+                        width: 10,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // ── Search bar ──
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 72,
+            left: 16,
+            right: 16,
+            child: Container(
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const SizedBox(width: 14),
+                  Icon(Icons.search_rounded,
+                      color: AppColors.navyBlue.withValues(alpha: 0.5),
+                      size: 22),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Search...',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 15,
+                      color: AppColors.navyBlue.withValues(alpha: 0.45),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Promo card ──
+          Positioned(
+            bottom: 48,
+            left: 60,
+            right: 60,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                    color: AppColors.white.withValues(alpha: 0.15)),
+              ),
+              child: Column(
+                children: [
+                  Text(
+                    'Up To',
+                    style: TextStyle(
+                      fontFamily: 'AtlanticBentley',
+                      fontSize: 16,
+                      color: AppColors.limeGreen,
+                      height: 1.0,
+                    ),
+                  ),
+                  RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '70%',
+                          style: TextStyle(
+                            fontFamily: 'Anton',
+                            fontSize: 32,
+                            color: AppColors.limeGreen,
+                          ),
+                        ),
+                        TextSpan(
+                          text: ' OFF',
+                          style: TextStyle(
+                            fontFamily: 'Anton',
+                            fontSize: 26,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    'FIRST BOOKING',
+                    style: TextStyle(
+                      fontFamily: 'Anton',
+                      fontSize: 14,
+                      color: AppColors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                  Text(
+                    'on BookPlayZ',
+                    style: TextStyle(
+                      fontFamily: 'AtlanticBentley',
+                      fontSize: 16,
+                      color: AppColors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Dot indicator ──
+          Positioned(
+            bottom: 16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: SmoothPageIndicator(
+                controller: _heroController,
+                count: 3,
+                effect: ExpandingDotsEffect(
+                  activeDotColor: AppColors.limeGreen,
+                  dotColor: AppColors.white.withValues(alpha: 0.4),
+                  dotHeight: 7,
+                  dotWidth: 7,
+                  expansionFactor: 2.5,
+                  spacing: 5,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Sport Filter Card ─────────────────────────────────────
+class _SportFilterCard extends StatelessWidget {
+  final String label;
+  final String icon;
+  final bool isActive;
+
+  const _SportFilterCard({
+    required this.label,
+    required this.icon,
+    required this.isActive,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 80,
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        color: isActive
+            ? AppColors.limeGreen
+            : AppColors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: isActive
+              ? AppColors.limeGreen
+              : AppColors.white.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SvgPicture.asset(
+            icon,
+            width: 36,
+            height: 36,
+            colorFilter: ColorFilter.mode(
+              isActive ? AppColors.navyBlue : AppColors.navyBlue,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 8,
+              fontWeight: FontWeight.w600,
+              color: isActive
+                  ? AppColors.navyBlue
+                  : AppColors.white.withValues(alpha: 0.8),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Map Banner ────────────────────────────────────────────
+class _MapBanner extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 90,
+      decoration: BoxDecoration(
+        color: AppColors.limeGreen,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        children: [
+          // Map image
+          Padding(
+            padding: const EdgeInsets.only(left: 8),
+            child: Image.asset(
+              AppImages.mapImage,
+              width: 100,
+              height: 90,
+              fit: BoxFit.contain,
+            ),
+          ),
+
+          // Text
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Find the Venue',
+                  style: TextStyle(
+                    fontFamily: 'AtlanticBentley',
+                    fontSize: 18,
+                    color: AppColors.navyBlue,
+                    height: 1.0,
+                  ),
+                ),
+                Text(
+                  'NEAR YOUR',
+                  style: TextStyle(
+                    fontFamily: 'Anton',
+                    fontSize: 20,
+                    color: AppColors.navyBlue,
+                    height: 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Arrow
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: AppColors.navyBlue.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.navyBlue,
+                size: 22,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Filter Chip ───────────────────────────────────────────
+class _FilterChip extends StatelessWidget {
+  final String label;
+  final IconData? icon;
+  final bool hasDropdown;
+
+  const _FilterChip({
+    required this.label,
+    this.icon,
+    this.hasDropdown = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+      decoration: BoxDecoration(
+        color: AppColors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: AppColors.white.withValues(alpha: 0.15)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              color: AppColors.white.withValues(alpha: 0.75),
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Icon(
+            hasDropdown
+                ? Icons.keyboard_arrow_down_rounded
+                : (icon ?? Icons.swap_vert_rounded),
+            color: AppColors.white.withValues(alpha: 0.6),
+            size: 16,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Venue Card ────────────────────────────────────────────
+class _VenueCard extends StatelessWidget {
+  final Map<String, dynamic> venue;
+  const _VenueCard({required this.venue});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.25),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Venue image
+            Image.asset(
+              venue['image'],
+              fit: BoxFit.cover,
+            ),
+
+            // Gradient overlay
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    Colors.black.withValues(alpha: 0.75),
+                  ],
+                  stops: const [0.4, 1.0],
+                ),
+              ),
+            ),
+
+            // Discount badge — top left
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: AppColors.navyBlue.withValues(alpha: 0.85),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.local_offer_rounded,
+                        color: AppColors.limeGreen, size: 13),
+                    const SizedBox(width: 4),
+                    Text(
+                      venue['discount'],
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.limeGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Bookmark — top right
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: Colors.black.withValues(alpha: 0.4),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.bookmark_border_rounded,
+                    color: AppColors.white, size: 18),
+              ),
+            ),
+
+            // Bottom info
+            Positioned(
+              bottom: 12,
+              left: 12,
+              right: 12,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Sport badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.limeGreen,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.sports_soccer_rounded,
+                            color: AppColors.navyBlue, size: 13),
+                        const SizedBox(width: 4),
+                        Text(
+                          venue['sport'],
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.navyBlue,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Distance badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 5),
+                    decoration: BoxDecoration(
+                      color: AppColors.navyBlue.withValues(alpha: 0.85),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.electric_moped_rounded,
+                            color: AppColors.white, size: 14),
+                        const SizedBox(width: 4),
+                        Text(
+                          venue['distance'],
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
