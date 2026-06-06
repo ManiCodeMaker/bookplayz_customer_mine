@@ -313,3 +313,9 @@ class ReviewApi {
   static String update(int id) => '$_base/$id';
   static String delete(int id) => '$_base/$id';
 }
+
+// ── Booking Detail ─────────────────────────────────────────────────────────────
+class BookingDetailApi {
+  BookingDetailApi._();
+  static String byId(int id) => '${ApiConstants.baseUrl}/bookings/$id';
+}

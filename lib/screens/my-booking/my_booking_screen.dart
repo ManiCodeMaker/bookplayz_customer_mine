@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/models/my_booking_model.dart';
+import 'package:bookplayz/screens/my-booking/booking_detail_screen.dart';
 import 'package:bookplayz/screens/my-booking/write_review.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
@@ -191,18 +192,16 @@ class _BookingHomeState extends State<_BookingHome> {
           // ── Title bar ────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Row(
-              children: [
-                Text(
-                  'My Bookings',
-                  style: TextStyle(
-                    fontFamily: 'Anton',
-                    fontSize:   20,
-                    fontWeight: FontWeight.w700,
-                    color:      AppColors.white,
-                  ),
+            child: Center(
+              child: Text(
+                'My Bookings',
+                style: TextStyle(
+                  fontFamily: 'Anton',
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.white,
                 ),
-              ],
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -395,6 +394,15 @@ class _BookingCardState extends State<_BookingCard> {
     _reviewId = widget.booking.reviewId;
   }
 
+  void _openDetails(BuildContext context) {
+    Navigator.of(context).push(MaterialPageRoute(
+      builder: (_) => BookingDetailScreen(
+        bookingId:   widget.booking.id,
+        bookingCode: widget.booking.bookingCode,
+      ),
+    ));
+  }
+
   Future<void> _openReviewSheet() async {
     final result = await showModalBottomSheet<Map<String, dynamic>?>(
       context:              context,
@@ -580,6 +588,7 @@ class _BookingCardState extends State<_BookingCard> {
                           label:     'View Details',
                           color:     AppColors.limeGreen,
                           textColor: Colors.white,
+                          onTap:     () => _openDetails(context),
                         ),
                       ),
                       if (booking.status == 'pending' ||
