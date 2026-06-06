@@ -377,7 +377,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         ),
         const SizedBox(height: 12),
         SizedBox(
-          height: 72,
+          height: 80,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -680,7 +680,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       padding: EdgeInsets.fromLTRB(
           20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.navyBlue,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),

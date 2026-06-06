@@ -8,27 +8,17 @@ class SportFilterRow extends StatelessWidget {
   final int activeIndex;
   final ValueChanged<int> onChanged;
 
-  // Optional overrides for use on white/light backgrounds (e.g. venue detail)
-  final Color? inactiveBgColor;
-  final Color? inactiveBorderColor;
-  final Color? inactiveIconColor;
-  final Color? inactiveLabelColor;
-
   const SportFilterRow({
     super.key,
     required this.sports,
     required this.activeIndex,
     required this.onChanged,
-    this.inactiveBgColor,
-    this.inactiveBorderColor,
-    this.inactiveIconColor,
-    this.inactiveLabelColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 100,
+      height: 96,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -42,10 +32,6 @@ class SportFilterRow extends StatelessWidget {
               label: sports[i]['label']!,
               icon: sports[i]['icon']!,
               isActive: isActive,
-              inactiveBgColor: inactiveBgColor,
-              inactiveBorderColor: inactiveBorderColor,
-              inactiveIconColor: inactiveIconColor,
-              inactiveLabelColor: inactiveLabelColor,
             ),
           );
         },
@@ -60,21 +46,11 @@ class SportFilterCard extends StatelessWidget {
   final String icon;
   final bool isActive;
 
-  // Optional color overrides (for light bg contexts)
-  final Color? inactiveBgColor;
-  final Color? inactiveBorderColor;
-  final Color? inactiveIconColor;
-  final Color? inactiveLabelColor;
-
   const SportFilterCard({
     super.key,
     required this.label,
     required this.icon,
     required this.isActive,
-    this.inactiveBgColor,
-    this.inactiveBorderColor,
-    this.inactiveIconColor,
-    this.inactiveLabelColor,
   });
 
   bool get _isNetwork =>
@@ -85,48 +61,62 @@ class SportFilterCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bgColor = isActive
-        ? AppColors.limeGreen
-        : (inactiveBgColor ?? AppColors.white.withValues(alpha: 0.08));
-
-    final borderColor = isActive
-        ? AppColors.limeGreen
-        : (inactiveBorderColor ?? AppColors.white.withValues(alpha: 0.15));
-
-    final iconColor = isActive
-        ? AppColors.navyBlue
-        : (inactiveIconColor ?? AppColors.white);
-
+    final iconColor = isActive ? Colors.white : AppColors.navyBlue;
     final labelColor = isActive
-        ? AppColors.navyBlue
-        : (inactiveLabelColor ?? AppColors.white.withValues(alpha: 0.8));
+        ? AppColors.limeGreen
+        : AppColors.white.withValues(alpha: 0.6);
 
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: 80,
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: borderColor),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          _buildIcon(iconColor),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 8,
-              fontWeight: FontWeight.w600,
-              color: labelColor,
+    final iconOnly = Center(child: _buildIcon(iconColor));
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              width: 70,
+              height: 70,
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.limeGreen : AppColors.white,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              padding: isActive
+                  ? const EdgeInsets.all(17)
+                  : const EdgeInsets.all(4),
+              child: isActive
+                  ? iconOnly
+                  : Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.white,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      padding: const EdgeInsets.all(13),
+                      child: iconOnly,
+                    ),
             ),
+            if (!isActive)
+              Positioned.fill(
+                child: IgnorePointer(
+                  child: CustomPaint(
+                    painter: const _SportTabInnerShadow(),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Text(
+          label.toUpperCase(),
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 8,
+            fontWeight: FontWeight.w700,
+            color: labelColor,
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -261,4 +251,41 @@ class VenueFilterChip extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SportTabInnerShadow extends CustomPainter {
+  const _SportTabInnerShadow();
+
+  static const double _r = 14;
+  static const double _b = 7;
+  static const Color _c = Color(0x44000000);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(_r),
+    );
+
+    canvas.save();
+    canvas.clipRRect(rrect);
+
+    final paint = Paint()
+      ..color = _c
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, _b);
+
+    final w = size.width;
+    final h = size.height;
+    const b = _b;
+
+    canvas.drawRect(Rect.fromLTWH(-b, -b * 2, w + b * 2, b * 2), paint);
+    canvas.drawRect(Rect.fromLTWH(-b, h, w + b * 2, b * 2), paint);
+    canvas.drawRect(Rect.fromLTWH(-b * 2, -b, b * 2, h + b * 2), paint);
+    canvas.drawRect(Rect.fromLTWH(w, -b, b * 2, h + b * 2), paint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_SportTabInnerShadow old) => false;
 }

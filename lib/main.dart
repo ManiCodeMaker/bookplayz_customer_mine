@@ -3,7 +3,10 @@ import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/screens/auth/otp_screen.dart';
 import 'package:bookplayz/screens/auth/signin_screen.dart';
 import 'package:bookplayz/screens/auth/signup_screen.dart';
+import 'package:bookplayz/screens/map/venue_map_screen.dart';
 import 'package:bookplayz/screens/search/search_screen.dart';
+import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
+import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:bookplayz/screens/venues/VenueDetailScreen.dart';
 import 'package:bookplayz/screens/wishlist/wishlist_screen.dart';
 import 'package:bookplayz/widgets/location_permission_screen.dart';
@@ -17,6 +20,14 @@ import 'package:bookplayz/theme/app_constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Use Hybrid Composition so Flutter widgets (search bar, bottom cards)
+  // render on top of the Google Map SurfaceView on Android.
+  final mapsImpl = GoogleMapsFlutterPlatform.instance;
+  if (mapsImpl is GoogleMapsFlutterAndroid) {
+    mapsImpl.useAndroidViewSurface = true;
+  }
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
@@ -52,6 +63,7 @@ class BookPlayZApp extends StatelessWidget {
         AppRoutes.locationPermission:(_) => const LocationPermissionScreen(),
         AppRoutes.search:            (_) => const SearchScreen(),
         AppRoutes.wishlist:          (_) => const WishlistScreen(),
+        AppRoutes.venueMap:          (_) => const VenueMapScreen(),
         AppRoutes.venueDetail: (context) {
           final slug = ModalRoute.of(context)!.settings.arguments as String;
           return VenueDetailScreen(slug: slug);

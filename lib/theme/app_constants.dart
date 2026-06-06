@@ -61,5 +61,5 @@ class AppRoutes {
   static const String locationPermission = '/location-permission';
   static const String wishlist = '/wishlist';
   static const String venueDetail = '/venue-detail';
-  
+  static const String venueMap    = '/venue-map';
 }

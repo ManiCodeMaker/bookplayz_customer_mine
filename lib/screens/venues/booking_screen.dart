@@ -438,29 +438,51 @@ class _BookingScreenState extends State<BookingScreen> {
                 },
                 child: Column(
                   children: [
-                    AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        color: isActive
-                            ? AppColors.limeGreen
-                            : AppColors.white.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: isActive
-                              ? AppColors.limeGreen
-                              : AppColors.white.withValues(alpha: 0.15),
+                    Stack(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: isActive
+                                ? AppColors.limeGreen
+                                : AppColors.white,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          // 4 px padding acts as the white ring — no border
+                          // needed, so the inner shadow isn't hidden by it.
+                          padding: isActive
+                              ? const EdgeInsets.all(14)
+                              : const EdgeInsets.all(4),
+                          child: isActive
+                              ? (cat.image != null
+                                  ? _buildCatIcon(cat.image!, isActive)
+                                  : Icon(Icons.sports,
+                                      color: Colors.white, size: 28))
+                              : Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding: const EdgeInsets.all(10),
+                                  child: cat.image != null
+                                      ? _buildCatIcon(cat.image!, isActive)
+                                      : Icon(Icons.sports,
+                                          color: Colors.white
+                                              .withValues(alpha: 0.7),
+                                          size: 28),
+                                ),
                         ),
-                      ),
-                      padding: const EdgeInsets.all(14),
-                      child: cat.image != null
-                          ? _buildCatIcon(cat.image!, isActive)
-                          : Icon(Icons.sports,
-                              color: isActive
-                                  ? Colors.white
-                                  : Colors.white.withValues(alpha: 0.7),
-                              size: 28),
+                        if (!isActive)
+                          Positioned.fill(
+                            child: IgnorePointer(
+                              child: CustomPaint(
+                                painter: const _CategoryTabInnerShadow(),
+                              ),
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 6),
                     Text(
@@ -972,7 +994,7 @@ class _BookingScreenState extends State<BookingScreen> {
       padding: EdgeInsets.fromLTRB(
           20, 12, 20, MediaQuery.of(context).padding.bottom + 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.navyBlue,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
@@ -1098,4 +1120,44 @@ class _Legend extends StatelessWidget {
       ],
     );
   }
+}
+
+class _CategoryTabInnerShadow extends CustomPainter {
+  const _CategoryTabInnerShadow();
+
+  static const double _r = 8;
+  static const double _b = 7;
+  static const Color _c = Color.fromARGB(205, 0, 0, 0);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rrect = RRect.fromRectAndRadius(
+      Offset.zero & size,
+      const Radius.circular(_r),
+    );
+
+    // Clip to the rounded rect — each shadow rect sits just outside the
+    // boundary so only the inward-bleeding blur is visible, keeping the
+    // centre white.
+    canvas.save();
+    canvas.clipRRect(rrect);
+
+    final paint = Paint()
+      ..color = _c
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, _b);
+
+    final w = size.width;
+    final h = size.height;
+    const b = _b;
+
+    canvas.drawRect(Rect.fromLTWH(-b, -b * 2, w + b * 2, b * 2), paint);
+    canvas.drawRect(Rect.fromLTWH(-b, h, w + b * 2, b * 2), paint);
+    canvas.drawRect(Rect.fromLTWH(-b * 2, -b, b * 2, h + b * 2), paint);
+    canvas.drawRect(Rect.fromLTWH(w, -b, b * 2, h + b * 2), paint);
+
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(_CategoryTabInnerShadow old) => false;
 }

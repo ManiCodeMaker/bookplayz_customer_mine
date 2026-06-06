@@ -789,7 +789,9 @@ class _TeamGameCard extends StatelessWidget {
 class _MapBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: () => Navigator.pushNamed(context, AppRoutes.venueMap),
+      child: Container(
       height: 90,
       decoration: BoxDecoration(
         color: AppColors.limeGreen,
@@ -855,6 +857,7 @@ class _MapBanner extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ), // Container
+    ); // GestureDetector
   }
 }
