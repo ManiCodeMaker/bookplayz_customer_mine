@@ -42,6 +42,10 @@ class AppImages {
   static const String brushStrokePanel = 'assets/images/brush-stroke-panel.png';
   static const String searchIcon = 'assets/images/search-icon.png';
 
+  static const String bookingDate = 'assets/images/booking-date-icon.png';
+  static const String bookingPrice = 'assets/images/booking-price-icon.png';
+  static const String bookingTime = 'assets/images/booking-time-icon.png';
+
 }
 
 class AppRoutes {

@@ -86,6 +86,7 @@ flutter:
     - assets/images/menus/
     - assets/images/venue-filter/
     - assets/images/homeStats/
+    - assets/images/gif/
     - assets/fonts/
     - assets/videos/splashscreen-video.mp4
 

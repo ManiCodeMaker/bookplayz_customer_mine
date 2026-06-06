@@ -3,6 +3,7 @@ import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/screens/venues/booking_screen.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/user_shell_screen.dart';
 import 'package:bookplayz/widgets/venue_filters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -696,9 +697,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               builder: (_) => BookingScreen(
                 venue: v,
                 onMyBookings: () {
-                  // Pop all booking screens back to shell
                   Navigator.of(context).popUntil((route) => route.isFirst);
-                  // Shell will handle tab switch via deep link or callback
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    UserShellScreen.onNavigateToMyBookings?.call();
+                  });
                 },
               ),
             ),

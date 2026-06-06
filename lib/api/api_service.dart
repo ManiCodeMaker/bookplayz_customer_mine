@@ -57,6 +57,46 @@ class ApiService {
     return _handleResponse(res);
   }
 
+  Future<Map<String, dynamic>> postMultipart(
+    String url,
+    Map<String, String> fields, {
+    List<http.MultipartFile> files = const [],
+  }) async {
+    return _sendMultipart('POST', url, fields, files);
+  }
+
+  Future<Map<String, dynamic>> putMultipart(
+    String url,
+    Map<String, String> fields, {
+    List<http.MultipartFile> files = const [],
+  }) async {
+    return _sendMultipart('PUT', url, fields, files);
+  }
+
+  Future<Map<String, dynamic>> _sendMultipart(
+    String method,
+    String url,
+    Map<String, String> fields,
+    List<http.MultipartFile> files,
+  ) async {
+    final request = http.MultipartRequest(method, Uri.parse(url));
+    if (_token != null) {
+      request.headers[HttpHeaders.authorizationHeader] = 'Bearer $_token';
+    }
+    request.headers[HttpHeaders.acceptHeader] = 'application/json';
+    request.fields.addAll(fields);
+    request.files.addAll(files);
+
+    final client = http.Client();
+    try {
+      final streamed  = await client.send(request).timeout(_timeout);
+      final response  = await http.Response.fromStream(streamed);
+      return _handleResponse(response);
+    } finally {
+      client.close();
+    }
+  }
+
   Future<String?> refreshAccessToken(String refreshToken) async {
     final res = await http
         .post(

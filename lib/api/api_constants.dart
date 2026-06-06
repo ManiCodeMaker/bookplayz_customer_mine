@@ -290,3 +290,26 @@ class PaymentApi {
     return bookingId as int;
   }
 }
+
+// ── My Bookings ───────────────────────────────────────────────────────────────
+class MyBookingsApi {
+  MyBookingsApi._();
+
+  static String upcoming({int page = 1, int limit = 9}) =>
+      '${ApiConstants.baseUrl}/bookings/my/upcoming?page=$page&limit=$limit';
+
+  static String history({int page = 1, int limit = 9}) =>
+      '${ApiConstants.baseUrl}/bookings/my/history?page=$page&limit=$limit';
+}
+
+// ── Reviews ───────────────────────────────────────────────────────────────────
+class ReviewApi {
+  ReviewApi._();
+
+  static const String _base = '${ApiConstants.baseUrl}/reviews';
+
+  static String create()       => _base;
+  static String byId(int id)   => '$_base/$id';
+  static String update(int id) => '$_base/$id';
+  static String delete(int id) => '$_base/$id';
+}

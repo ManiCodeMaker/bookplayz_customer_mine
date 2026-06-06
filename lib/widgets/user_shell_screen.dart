@@ -1,5 +1,6 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/screens/home/user_home_screen.dart';
+import 'package:bookplayz/screens/my-booking/my_booking_screen.dart';
 import 'package:bookplayz/screens/venues/venues.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
@@ -12,6 +13,9 @@ import 'dart:async';
 class UserShellScreen extends StatefulWidget {
   const UserShellScreen({super.key});
 
+  // Registered by the shell state so any screen can navigate to My Bookings.
+  static VoidCallback? onNavigateToMyBookings;
+
   @override
   State<UserShellScreen> createState() => _UserShellScreenState();
 }
@@ -23,6 +27,7 @@ class _UserShellScreenState extends State<UserShellScreen>
   final PageController _heroController = PageController();
   final GlobalKey<NavigatorState> _profileNavigatorKey = GlobalKey<NavigatorState>();
   final GlobalKey<NavigatorState> _bookingNavigatorKey = GlobalKey<NavigatorState>();
+  final GlobalKey<MyBookingScreenState> _bookingKey = GlobalKey<MyBookingScreenState>();
   final GlobalKey<VenuesScreenState> _venuesKey = GlobalKey<VenuesScreenState>();
 
   bool _drawerOpen = false;
@@ -80,6 +85,9 @@ class _UserShellScreenState extends State<UserShellScreen>
     if (i == 1) {
       _venuesKey.currentState?.refresh();
     }
+    if (i == 2) {
+      _bookingKey.currentState?.onTabActivated();
+    }
     setState(() {
       _history.add(i);
       _navIndex = i;
@@ -101,11 +109,20 @@ class _UserShellScreenState extends State<UserShellScreen>
       CurvedAnimation(parent: _drawerAnim, curve: Curves.easeOut),
     );
 
+    UserShellScreen.onNavigateToMyBookings = () => _onNavTap(2);
+
     _screens = [
       UserHomeScreen(
         onSeeAll: () => _onNavTap(1),
       ),
       VenuesScreen(key: _venuesKey, onBack: _goBack),
+      MyBookingScreen(
+        key:          _bookingKey,
+        navigatorKey: _bookingNavigatorKey,
+        onBack:       _goBack,
+      ),
+      const SizedBox.shrink(),
+      const SizedBox.shrink(),
     ];
   }
 
