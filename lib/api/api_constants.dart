@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/booking_model.dart';
+import 'package:bookplayz/models/venue_review_model.dart';
 
 import 'api_service.dart';
 import '../models/venue_model.dart';
@@ -319,6 +320,23 @@ class ReviewApi {
   static String byId(int id)   => '$_base/$id';
   static String update(int id) => '$_base/$id';
   static String delete(int id) => '$_base/$id';
+
+  static String venuePublic(int venueId, {int page = 1, int limit = 5}) =>
+      '${ApiConstants.baseUrl}/reviews/venue/$venueId/public'
+      '?page=$page&limit=$limit&sortBy=latest';
+
+  static Future<({List<VenueReview> reviews, VenueReviewMeta meta})>
+      fetchVenuePublic(int venueId, {int page = 1, int limit = 5}) async {
+    final res = await ApiService.instance.get(
+      venuePublic(venueId, page: page, limit: limit),
+    );
+    final reviews = (res['data'] as List<dynamic>)
+        .map((e) => VenueReview.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final meta =
+        VenueReviewMeta.fromJson(res['meta'] as Map<String, dynamic>);
+    return (reviews: reviews, meta: meta);
+  }
 }
 
 // ── Booking Detail ─────────────────────────────────────────────────────────────

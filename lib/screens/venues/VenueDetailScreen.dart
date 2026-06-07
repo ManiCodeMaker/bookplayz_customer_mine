@@ -1,7 +1,9 @@
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
+import 'package:bookplayz/models/venue_review_model.dart';
 import 'package:bookplayz/screens/venues/booking_screen.dart';
+import 'package:bookplayz/screens/venues/venue_reviews_screen.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:bookplayz/widgets/user_shell_screen.dart';
 import 'package:bookplayz/widgets/venue_filters.dart';
@@ -27,6 +29,10 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   int _activeCategory = -1;
   bool _aboutExpanded = false;
 
+  List<VenueReview> _reviews = [];
+  bool _reviewsLoading = false;
+  String? _reviewsError;
+
   @override
   void initState() {
     super.initState();
@@ -48,8 +54,33 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     try {
       final v = await VenueDetailApi.bySlug(widget.slug);
       if (mounted) setState(() { _venue = v; _loading = false; });
+      _fetchReviews(v.id);
     } catch (e) {
       if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    }
+  }
+
+  Future<void> _fetchReviews(int venueId) async {
+    if (!mounted) return;
+    setState(() {
+      _reviewsLoading = true;
+      _reviewsError = null;
+    });
+    try {
+      final result = await ReviewApi.fetchVenuePublic(venueId, limit: 2);
+      if (mounted) {
+        setState(() {
+          _reviews = result.reviews;
+          _reviewsLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _reviewsError = e.toString();
+          _reviewsLoading = false;
+        });
+      }
     }
   }
 
@@ -108,7 +139,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                             itemBuilder: (_, i) => Image.network(
                               imgList[i].imageUrl,
                               fit: BoxFit.cover,
-                              errorBuilder: (_, __, ___) =>
+                              errorBuilder: (_, err, st) =>
                                   Container(color: AppColors.navyBlue),
                             ),
                           ),
@@ -185,6 +216,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     _buildTimings(v),
                     const SizedBox(height: 20),
                     _buildLocation(v),
+                    const SizedBox(height: 20),
+                    _buildReviews(v),
                     const SizedBox(height: 20),
                     if (v.rules.isNotEmpty) ...[
                       _buildRules(v.rules),
@@ -581,7 +614,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                       '&zoom=15&size=600x300&markers=color:green%7C${v.latitude},${v.longitude}'
                       '&key=YOUR_KEY',
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _MapFallback(venue: v),
+                      errorBuilder: (_, err, st) => _MapFallback(venue: v),
                     )
                   : _MapFallback(venue: v),
             ),
@@ -669,6 +702,170 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   ],
                 ),
               )),
+        ],
+      ),
+    );
+  }
+
+  // ── Reviews preview ──
+  Widget _buildReviews(VenueDetailModel v) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Reviews',
+                style: TextStyle(
+                  fontFamily: 'Jost',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              if (v.totalRatings > 2)
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => VenueReviewsScreen(venue: v),
+                    ),
+                  ),
+                  child: const Text(
+                    'See All',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.limeGreen,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          if (_reviewsLoading)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: CircularProgressIndicator(
+                    color: AppColors.limeGreen, strokeWidth: 2),
+              ),
+            )
+          else if (_reviewsError != null)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Could not load reviews',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.45),
+                ),
+              ),
+            )
+          else if (_reviews.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'No reviews yet',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  fontSize: 13,
+                  color: Colors.white.withValues(alpha: 0.45),
+                ),
+              ),
+            )
+          else
+            ...List.generate(_reviews.length, (i) {
+              final r = _reviews[i];
+              return Padding(
+                padding: EdgeInsets.only(bottom: i < _reviews.length - 1 ? 14 : 0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppColors.limeGreen.withValues(alpha: 0.15),
+                      child: Text(
+                        r.userName.isNotEmpty
+                            ? r.userName[0].toUpperCase()
+                            : 'U',
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.limeGreen,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  r.userName,
+                                  style: const TextStyle(
+                                    fontFamily: 'Inter',
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.star_rounded,
+                                        color: Colors.amber, size: 12),
+                                    const SizedBox(width: 3),
+                                    Text(
+                                      r.rating.toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            r.content,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 13,
+                              height: 1.5,
+                              color: Colors.white.withValues(alpha: 0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }),
         ],
       ),
     );
