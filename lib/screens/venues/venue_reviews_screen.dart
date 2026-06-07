@@ -23,6 +23,8 @@ class _VenueReviewsScreenState extends State<VenueReviewsScreen> {
   int _displayTotal = 0;
 
   final ScrollController _scrollCtrl = ScrollController();
+  final PageController _imageCtrl = PageController();
+  int _currentImage = 0;
 
   @override
   void initState() {
@@ -38,6 +40,7 @@ class _VenueReviewsScreenState extends State<VenueReviewsScreen> {
   @override
   void dispose() {
     _scrollCtrl.dispose();
+    _imageCtrl.dispose();
     super.dispose();
   }
 
@@ -92,22 +95,27 @@ class _VenueReviewsScreenState extends State<VenueReviewsScreen> {
       backgroundColor: AppColors.navyBlue,
       body: Stack(
         children: [
-          // Hero image
+          // Hero image carousel
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             height: topPad + 180,
-            child: v.images.isNotEmpty
-                ? Image.network(
-                    v.primaryImage ?? v.images.first.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, err, st) =>
-                        Container(color: AppColors.navyBlue),
-                  )
-                : Container(color: AppColors.navyBlue),
+            child: v.images.isEmpty
+                ? Container(color: AppColors.navyBlue)
+                : PageView.builder(
+                    controller: _imageCtrl,
+                    onPageChanged: (i) => setState(() => _currentImage = i),
+                    itemCount: v.images.length,
+                    itemBuilder: (_, i) => Image.network(
+                      v.images[i].imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, err, st) =>
+                          Container(color: AppColors.navyBlue),
+                    ),
+                  ),
           ),
-          // Gradient over hero
+          // Bottom gradient over hero
           Positioned(
             top: 0,
             left: 0,
@@ -120,12 +128,37 @@ class _VenueReviewsScreenState extends State<VenueReviewsScreen> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.black.withValues(alpha: 0.35),
-                    Colors.black.withValues(alpha: 0.6),
+                    Colors.black.withValues(alpha: 0.65),
                   ],
                 ),
               ),
             ),
           ),
+          // Dot indicators
+          if (v.images.length > 1)
+            Positioned(
+              top: topPad + 148,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(v.images.length, (i) {
+                  final active = i == _currentImage;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: active ? 20 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: active
+                          ? AppColors.limeGreen
+                          : Colors.white.withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  );
+                }),
+              ),
+            ),
 
           // White content panel
           Column(
@@ -196,60 +229,76 @@ class _VenueReviewsScreenState extends State<VenueReviewsScreen> {
     final v = widget.venue;
     final total = _displayTotal > 0 ? _displayTotal : v.totalRatings;
 
-    return ListView(
-      controller: _scrollCtrl,
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 32),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildRatingSummary(v, total),
-        const SizedBox(height: 24),
-        Text(
-          'Reviews ($total)',
-          style: const TextStyle(
-            fontFamily: 'Jost',
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.navyBlue,
+        // ── Fixed: rating overview ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+          child: _buildRatingSummary(v, total),
+        ),
+        const SizedBox(height: 20),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Text(
+            'Reviews ($total)',
+            style: const TextStyle(
+              fontFamily: 'Jost',
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navyBlue,
+            ),
           ),
         ),
-        const SizedBox(height: 16),
-        if (_reviews.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 24),
-            child: Center(
-              child: Text(
-                'No reviews yet',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
-              ),
-            ),
-          )
-        else ...[
-          ..._reviews.map((r) => _buildReviewItem(r)),
-          if (_loadingMore)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.navyBlue),
-              ),
-            )
-          else if (!_hasMore)
-            const Padding(
-              padding: EdgeInsets.only(top: 8),
-              child: Center(
-                child: Text(
-                  'All reviews loaded',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    color: Colors.grey,
+        const SizedBox(height: 12),
+        const Divider(height: 1, color: Color(0xFFEEEEEE)),
+        // ── Scrollable: review list only ──
+        Expanded(
+          child: _reviews.isEmpty
+              ? const Center(
+                  child: Text(
+                    'No reviews yet',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
                   ),
+                )
+              : ListView.builder(
+                  controller: _scrollCtrl,
+                  padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+                  itemCount: _reviews.length + 1,
+                  itemBuilder: (_, i) {
+                    if (i < _reviews.length) return _buildReviewItem(_reviews[i]);
+                    if (_loadingMore) {
+                      return const Padding(
+                        padding: EdgeInsets.all(16),
+                        child: Center(
+                          child: CircularProgressIndicator(
+                              color: AppColors.navyBlue),
+                        ),
+                      );
+                    }
+                    if (!_hasMore) {
+                      return const Padding(
+                        padding: EdgeInsets.only(top: 8, bottom: 8),
+                        child: Center(
+                          child: Text(
+                            'All reviews loaded',
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
                 ),
-              ),
-            ),
-        ],
+        ),
       ],
     );
   }

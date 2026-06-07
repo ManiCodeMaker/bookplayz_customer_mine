@@ -9,7 +9,9 @@ import 'package:bookplayz/widgets/user_shell_screen.dart';
 import 'package:bookplayz/widgets/venue_filters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class VenueDetailScreen extends StatefulWidget {
   final String slug;
@@ -574,6 +576,9 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   // ── Location ──
   Widget _buildLocation(VenueDetailModel v) {
+    final hasCoords = v.latitude != null && v.longitude != null;
+    final venueLatLng = hasCoords ? LatLng(v.latitude!, v.longitude!) : null;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -589,32 +594,51 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
                   )),
-              GestureDetector(
-                onTap: () {},
-                child: const Text('Open Map',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.limeGreen,
-                    )),
-              ),
+              if (hasCoords)
+                GestureDetector(
+                  onTap: () async {
+                    final url = Uri.parse(
+                      'https://www.google.com/maps/search/?api=1'
+                      '&query=${v.latitude},${v.longitude}',
+                    );
+                    if (await canLaunchUrl(url)) launchUrl(url);
+                  },
+                  child: const Text('Open Map',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.limeGreen,
+                      )),
+                ),
             ],
           ),
           const SizedBox(height: 12),
           ClipRRect(
             borderRadius: BorderRadius.circular(14),
-            child: Container(
+            child: SizedBox(
               height: 160,
-              color: Colors.white.withValues(alpha: 0.06),
-              child: v.latitude != null && v.longitude != null
-                  ? Image.network(
-                      'https://maps.googleapis.com/maps/api/staticmap'
-                      '?center=${v.latitude},${v.longitude}'
-                      '&zoom=15&size=600x300&markers=color:green%7C${v.latitude},${v.longitude}'
-                      '&key=YOUR_KEY',
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, err, st) => _MapFallback(venue: v),
+              child: hasCoords
+                  ? GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: venueLatLng!,
+                        zoom: 15,
+                      ),
+                      markers: {
+                        Marker(
+                          markerId: const MarkerId('venue'),
+                          position: venueLatLng,
+                        ),
+                      },
+                      liteModeEnabled: true,
+                      scrollGesturesEnabled: false,
+                      zoomGesturesEnabled: false,
+                      tiltGesturesEnabled: false,
+                      rotateGesturesEnabled: false,
+                      zoomControlsEnabled: false,
+                      myLocationEnabled: false,
+                      myLocationButtonEnabled: false,
+                      mapToolbarEnabled: false,
                     )
                   : _MapFallback(venue: v),
             ),
@@ -637,7 +661,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               ),
               GestureDetector(
                 onTap: () {
-                  if (v.latitude != null && v.longitude != null) {
+                  if (hasCoords) {
                     Clipboard.setData(ClipboardData(
                         text: '${v.latitude}, ${v.longitude}'));
                     ScaffoldMessenger.of(context).showSnackBar(
@@ -726,7 +750,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   color: Colors.white,
                 ),
               ),
-              if (v.totalRatings > 2)
+              if (_reviews.length >= 2)
                 GestureDetector(
                   onTap: () => Navigator.push(
                     context,
