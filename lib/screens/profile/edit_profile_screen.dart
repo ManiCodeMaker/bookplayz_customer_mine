@@ -27,8 +27,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool    _isSaving = false;
   String? _error;
 
-  bool    _emailVerified  = true;  // true = no banner until after first save
-  bool    _hasSaved       = false;
+  bool    _emailVerified  = false;
   bool    _isSendingOtp   = false;
   String? _profileImageUrl;
   XFile?  _pickedImage;
@@ -53,6 +52,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final res  = await ApiService.instance.get(ProfileApi.me);
       final data = res['data'] as Map<String, dynamic>;
+      debugPrint('[EditProfile] emailVerified=${data['emailVerified']}  email=${data['email']}');
       _nameController.text  = data['fullName'] as String? ?? '';
       _emailController.text = data['email']    as String? ?? '';
       _phoneController.text = data['mobile']   as String? ?? '';
@@ -123,7 +123,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
       setState(() {
         _isSaving        = false;
-        _hasSaved        = true;
         _pickedImage     = null;
         _profileImageUrl = responseData['profileImage'] as String?;
         _emailVerified   = responseData['emailVerified'] as bool? ?? false;
@@ -157,6 +156,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _VerifyEmailSheet(email: _emailController.text.trim()),
     );
@@ -177,13 +177,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                     children: [
                       // ── Screen title with back button ─────────────────
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(0, 20, 0, 20),
-                        child: Stack(
-                          alignment: Alignment.center,
-                          children: [
-                            Positioned(
-                              left: 16,
-                              child: GestureDetector(
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                        child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              GestureDetector(
                                 onTap: () {
                                   if (widget.onBack != null) {
                                     widget.onBack!();
@@ -204,41 +202,43 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   ),
                                 ),
                               ),
-                            ),
-                            Column(
-                              children: [
-                                const Text(
-                                  'Edit',
-                                  style: TextStyle(
-                                    fontFamily: 'AtlanticBentley',
-                                    fontSize: 22,
-                                    color: AppColors.brightLimeGreen,
-                                    height: 1.0,
-                                  ),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    const Text(
+                                      'Edit',
+                                      style: TextStyle(
+                                        fontFamily: 'AtlanticBentley',
+                                        fontSize: 22,
+                                        color: AppColors.brightLimeGreen,
+                                        height: 1.0,
+                                      ),
+                                    ),
+                                    const Text(
+                                      'Profile',
+                                      style: TextStyle(
+                                        fontFamily: 'Anton',
+                                        fontSize: 26,
+                                        color: AppColors.white,
+                                        height: 1.1,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'Update your profile information',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 13,
+                                        color: AppColors.white.withValues(alpha: 0.5),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                const Text(
-                                  'Profile',
-                                  style: TextStyle(
-                                    fontFamily: 'Anton',
-                                    fontSize: 26,
-                                    color: AppColors.white,
-                                    height: 1.1,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Update your profile information',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 13,
-                                    color: AppColors.white.withValues(alpha: 0.5),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                              ),
+                              const SizedBox(width: 38), // balance the back button
+                            ],
+                          ),
                         ),
-                      ),
 
                       // ── Form content ──────────────────────────────────
                       Padding(
@@ -253,7 +253,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             )),
                             const SizedBox(height: 24),
 
-                            if (_hasSaved && !_emailVerified) ...[
+                            if (!_emailVerified) ...[
                               _UnverifiedBanner(
                                 onVerify:  _isSendingOtp ? null : _requestEmailOtp,
                                 isSending: _isSendingOtp,
@@ -375,7 +375,7 @@ class _AvatarPicker extends StatelessWidget {
                       ? Image.network(
                           imageUrl!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, err) => _defaultAvatar,
+                          errorBuilder: (_, err, stack) => _defaultAvatar,
                         )
                       : _defaultAvatar,
             ),

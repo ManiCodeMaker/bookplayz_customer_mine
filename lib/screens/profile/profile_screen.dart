@@ -1,16 +1,19 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/screens/profile/edit_profile_screen.dart';
+import 'package:bookplayz/screens/profile/fav_screen.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onBack;
   final GlobalKey<NavigatorState>? navigatorKey;
+  final ValueChanged<bool>? onSubRouteChanged;
 
   const ProfileScreen({
     super.key,
     this.onBack,
     this.navigatorKey,
+    this.onSubRouteChanged,
   });
 
   @override
@@ -21,6 +24,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final GlobalKey<NavigatorState> _navigatorKey =
       widget.navigatorKey ?? GlobalKey<NavigatorState>();
 
+  void _pushRoute(String routeName) {
+    _navigatorKey.currentState?.pushNamed(routeName);
+    widget.onSubRouteChanged?.call(true);
+  }
+
+  void _popRoute() {
+    _navigatorKey.currentState?.pop();
+    widget.onSubRouteChanged?.call(false);
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -28,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
         if (_navigatorKey.currentState?.canPop() ?? false) {
-          _navigatorKey.currentState?.pop();
+          _popRoute();
         } else {
           widget.onBack?.call();
         }
@@ -39,16 +52,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           switch (settings.name) {
             case '/edit-profile':
               return MaterialPageRoute(
-                builder: (_) => EditProfileScreen(
-                  onBack: () => _navigatorKey.currentState?.pop(),
-                ),
+                builder: (_) => EditProfileScreen(onBack: _popRoute),
+              );
+
+            case '/favorites':
+              return MaterialPageRoute(
+                builder: (_) => FavScreen(onBack: _popRoute),
               );
 
             default:
               return MaterialPageRoute(
                 builder: (_) => _ProfileHome(
-                  onEditProfileTap: () =>
-                      _navigatorKey.currentState?.pushNamed('/edit-profile'),
+                  onEditProfileTap: () => _pushRoute('/edit-profile'),
+                  onFavoritesTap: () => _pushRoute('/favorites'),
                 ),
               );
           }
@@ -61,8 +77,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 // ── Profile home ──────────────────────────────────────────────────────────────
 class _ProfileHome extends StatelessWidget {
   final VoidCallback? onEditProfileTap;
+  final VoidCallback? onFavoritesTap;
 
-  const _ProfileHome({this.onEditProfileTap});
+  const _ProfileHome({this.onEditProfileTap, this.onFavoritesTap});
 
   @override
   Widget build(BuildContext context) {
@@ -118,14 +135,23 @@ class _ProfileHome extends StatelessWidget {
                         label: 'Edit Profile',
                         subtitle: 'Name, email, profile photo',
                         onTap: onEditProfileTap ?? () {},
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _MenuCard(
+                    title: 'Saved',
+                    items: [
+                      _MenuItem(
+                        icon: Icons.favorite_border_rounded,
+                        label: 'Favorites',
+                        subtitle: 'Your saved venues',
+                        onTap: onFavoritesTap ?? () {},
                         showDivider: false,
                       ),
                     ],
                   ),
-
-                  // Future menu sections can be added here, e.g.:
-                  // const SizedBox(height: 16),
-                  // _MenuCard(title: 'Saved', items: [ ... ])
                 ],
               ),
             ),
@@ -349,3 +375,4 @@ class _MenuItem extends StatelessWidget {
     );
   }
 }
+

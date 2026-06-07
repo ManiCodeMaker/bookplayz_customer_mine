@@ -32,6 +32,7 @@ class _UserShellScreenState extends State<UserShellScreen>
   final GlobalKey<VenuesScreenState> _venuesKey = GlobalKey<VenuesScreenState>();
 
   bool _drawerOpen = false;
+  bool _profileInSubRoute = false;
   late AnimationController _drawerAnim;
   late Animation<Offset> _drawerSlide;
   late Animation<double> _drawerFade;
@@ -56,11 +57,24 @@ class _UserShellScreenState extends State<UserShellScreen>
     }
   }
 
-  void _openWishlist() {
+  void _openFavoritesInProfile() {
     _closeDrawer();
     Future.delayed(const Duration(milliseconds: 300), () {
       if (!mounted) return;
-      Navigator.pushNamed(context, AppRoutes.wishlist);
+      // Pop any open profile sub-route back to home first
+      _profileNavigatorKey.currentState?.popUntil((r) => r.isFirst);
+      // Switch to the profile tab if not already there
+      if (_navIndex != 4) {
+        setState(() {
+          _history.add(4);
+          _navIndex = 4;
+        });
+      }
+      // Push the favorites screen and mark nav as in sub-route
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _profileNavigatorKey.currentState?.pushNamed('/favorites');
+        setState(() => _profileInSubRoute = true);
+      });
     });
   }
 
@@ -79,6 +93,7 @@ class _UserShellScreenState extends State<UserShellScreen>
     if (i == _navIndex) return;
     if (_navIndex == 4 && i != 4) {
       _profileNavigatorKey.currentState?.popUntil((route) => route.isFirst);
+      _profileInSubRoute = false;
     }
     if (_navIndex == 2 && i != 2) {
       _bookingNavigatorKey.currentState?.popUntil((route) => route.isFirst);
@@ -126,6 +141,7 @@ class _UserShellScreenState extends State<UserShellScreen>
       ProfileScreen(
         navigatorKey: _profileNavigatorKey,
         onBack: _goBack,
+        onSubRouteChanged: (inSub) => setState(() => _profileInSubRoute = inSub),
       ),
     ];
   }
@@ -161,13 +177,15 @@ class _UserShellScreenState extends State<UserShellScreen>
               ),
             ],
           ),
-          bottomNavigationBar: Padding(
-            padding: const EdgeInsets.only(top: 12, bottom: 10),
-            child: UserBottomNav(
-              currentIndex: _navIndex,
-              onTap: _onNavTap,
-            ),
-          ),
+          bottomNavigationBar: (_navIndex == 4 && _profileInSubRoute)
+              ? null
+              : Padding(
+                  padding: const EdgeInsets.only(top: 12, bottom: 10),
+                  child: UserBottomNav(
+                    currentIndex: _navIndex,
+                    onTap: _onNavTap,
+                  ),
+                ),
         ),
 
         // ── Backdrop ────────────────────────────────────────────────────────
@@ -192,7 +210,7 @@ class _UserShellScreenState extends State<UserShellScreen>
                 onHomeTap: () => _onNavTap(0),
                 onBookingTap: () => _onNavTap(2),
                 onProfileTap: () => _onNavTap(4),
-                onWishListTap: _openWishlist,
+                onWishListTap: _openFavoritesInProfile,
                 onLogout: _onLogout,
               ),
             ),

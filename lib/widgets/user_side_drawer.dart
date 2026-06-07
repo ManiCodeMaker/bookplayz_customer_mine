@@ -124,7 +124,7 @@ class UserSideDrawer extends StatelessWidget {
                           ),
                           _DrawerItem(
                             icon: Icons.favorite_border_rounded,
-                            label: 'Wish List',
+                            label: 'Favorites',
                             onTap: () { onClose(); onWishListTap(); },
                           ),
                           _DrawerItem(
