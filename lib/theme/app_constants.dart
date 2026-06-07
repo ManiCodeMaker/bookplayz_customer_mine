@@ -57,6 +57,10 @@ class AppImages {
   static const String homeStats3svg = 'assets/images/homeStats/user_stats_3svg.svg';
   static const String homeStats4svg = 'assets/images/homeStats/user_stats_4svg.svg';
 
+  static const String offerBooking1 = 'assets/images/offerBooking-1.png';
+  static const String offerBooking2 = 'assets/images/offerBooking-1.png';
+   static const String offerBooking3 = 'assets/images/offerBooking-1.png';
+
 }
 
 class AppRoutes {

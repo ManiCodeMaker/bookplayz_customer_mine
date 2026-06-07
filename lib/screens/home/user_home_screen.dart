@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/api/api_constants.dart';
+import 'package:bookplayz/models/promo_banner_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/widgets/invite_friend_banner.dart';
 import 'package:bookplayz/widgets/review_carousel.dart';
@@ -65,19 +66,10 @@ Future<void> _toggleFavorite(int venueId) async {
 
 
   // ── Bulk booking / promo banners ──
-  final List<Map<String, dynamic>> _promoBanners = [
-    {
-      'title': 'Get Offer for',
-      'highlight': 'Bulk Booking',
-      'discount': '25% OFF',
-      'image': AppImages.venueHero, // replace with actual promo image
-    },
-    {
-      'title': 'Get Offer for',
-      'highlight': 'Evening Slots',
-      'discount': '20% OFF',
-      'image': AppImages.venueHero,
-    },
+  static const List<PromoBanner> _promoBanners = [
+    PromoBanner(localImage: AppImages.offerBooking1),
+    PromoBanner(localImage: AppImages.offerBooking2),
+    PromoBanner(localImage: AppImages.offerBooking3),
   ];
 
   // ── Team games ──
@@ -530,7 +522,7 @@ class _SectionHeader extends StatelessWidget {
 
 // ── Promo Banner Carousel ─────────────────────────────────
 class _PromoBannerCarousel extends StatefulWidget {
-  final List<Map<String, dynamic>> banners;
+  final List<PromoBanner> banners;
   const _PromoBannerCarousel({required this.banners});
 
   @override
@@ -538,8 +530,20 @@ class _PromoBannerCarousel extends StatefulWidget {
 }
 
 class _PromoBannerCarouselState extends State<_PromoBannerCarousel> {
-  final PageController _ctrl = PageController(viewportFraction: 0.88);
-  int _current = 0;
+  static const int _multiplier = 1000;
+  late final PageController _ctrl;
+  late int _currentPage;
+
+  @override
+  void initState() {
+    super.initState();
+    final count = widget.banners.length;
+    _currentPage = count * (_multiplier ~/ 2);
+    _ctrl = PageController(
+      viewportFraction: 0.82,
+      initialPage: _currentPage,
+    );
+  }
 
   @override
   void dispose() {
@@ -547,93 +551,41 @@ class _PromoBannerCarouselState extends State<_PromoBannerCarousel> {
     super.dispose();
   }
 
+  int get _currentIndex => _currentPage % widget.banners.length;
+
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         SizedBox(
-          height: 120,
+          height: 140,
           child: PageView.builder(
             controller: _ctrl,
-            itemCount: widget.banners.length,
-            onPageChanged: (i) => setState(() => _current = i),
+            itemCount: widget.banners.length * _multiplier,
+            onPageChanged: (i) => setState(() => _currentPage = i),
             itemBuilder: (_, i) {
-              final b = widget.banners[i];
-              return Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(14),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.2),
-                        blurRadius: 8,
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(14),
-                    child: Stack(
-                      fit: StackFit.expand,
-                      children: [
-                        // Background image
-                        Image.asset(b['image'], fit: BoxFit.cover),
-
-                        // Overlay
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [
-                                Colors.black.withValues(alpha: 0.55),
-                                Colors.transparent,
-                              ],
-                              begin: Alignment.centerLeft,
-                              end: Alignment.centerRight,
-                            ),
-                          ),
-                        ),
-
-                        // Text
-                        Positioned(
-                          left: 16,
-                          top: 0,
-                          bottom: 0,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                b['title'],
-                                style: TextStyle(
-                                  fontFamily: 'AtlanticBentley',
-                                  fontSize: 13,
-                                  color:
-                                      AppColors.white.withValues(alpha: 0.8),
-                                  height: 1.0,
-                                ),
-                              ),
-                              Text(
-                                b['highlight'],
-                                style: const TextStyle(
-                                  fontFamily: 'Anton',
-                                  fontSize: 20,
-                                  color: AppColors.white,
-                                  height: 1.1,
-                                ),
-                              ),
-                              Text(
-                                b['discount'],
-                                style: const TextStyle(
-                                  fontFamily: 'Anton',
-                                  fontSize: 22,
-                                  color: AppColors.limeGreen,
-                                  height: 1.0,
-                                ),
-                              ),
-                            ],
-                          ),
+              final b = widget.banners[i % widget.banners.length];
+              final isCenter = i == _currentPage;
+              return AnimatedScale(
+                scale: isCenter ? 1.0 : 0.91,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: isCenter ? 0.3 : 0.1),
+                          blurRadius: isCenter ? 12 : 4,
+                          offset: const Offset(0, 4),
                         ),
                       ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Image.asset(b.localImage, fit: BoxFit.cover),
                     ),
                   ),
                 ),
@@ -642,7 +594,6 @@ class _PromoBannerCarouselState extends State<_PromoBannerCarousel> {
           ),
         ),
         const SizedBox(height: 10),
-        // Dot indicators
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: List.generate(
@@ -650,10 +601,10 @@ class _PromoBannerCarouselState extends State<_PromoBannerCarousel> {
             (i) => AnimatedContainer(
               duration: const Duration(milliseconds: 200),
               margin: const EdgeInsets.symmetric(horizontal: 3),
-              width: _current == i ? 18 : 7,
+              width: _currentIndex == i ? 18 : 7,
               height: 7,
               decoration: BoxDecoration(
-                color: _current == i
+                color: _currentIndex == i
                     ? AppColors.limeGreen
                     : AppColors.white.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(4),
