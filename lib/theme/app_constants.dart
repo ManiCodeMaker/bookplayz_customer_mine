@@ -52,6 +52,10 @@ class AppImages {
   static const String homeStats3 = 'assets/images/homeStats/user_stats_3.png';
   static const String homeStats4 = 'assets/images/homeStats/user_stats_4.png';
 
+  static const String homeStats1svg = 'assets/images/homeStats/user_stats_1.svg';
+  static const String homeStats2svg = 'assets/images/homeStats/user_stats_2svg.svg';
+  static const String homeStats3svg = 'assets/images/homeStats/user_stats_3svg.svg';
+  static const String homeStats4svg = 'assets/images/homeStats/user_stats_4svg.svg';
 
 }
 

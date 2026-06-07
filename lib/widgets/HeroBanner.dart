@@ -157,7 +157,7 @@ class HeroBanner extends StatelessWidget {
           // ── 5. Dot indicator (carousel only) ─────────────────
           if (showCarousel && controller != null)
             Positioned(
-              bottom: 10,
+              bottom: 40,
               left: 0,
               right: 0,
               child: Opacity(
@@ -169,8 +169,8 @@ class HeroBanner extends StatelessWidget {
                     effect: ExpandingDotsEffect(
                       activeDotColor: AppColors.limeGreen,
                       dotColor: AppColors.white.withValues(alpha: 0.4),
-                      dotHeight: 6,
-                      dotWidth: 6,
+                      dotHeight: 8,
+                      dotWidth: 8,
                       expansionFactor: 2.5,
                       spacing: 5,
                     ),

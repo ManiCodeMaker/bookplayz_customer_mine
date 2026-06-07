@@ -5,6 +5,7 @@ class AppColors {
   static const Color black = Color(0xFF000000);
   static const Color blue = Color(0xFF295282);
   static const Color navyBlue = Color(0xFF00224A); 
+  static const Color veryDarkBlue = Color(0xFF040C16);
   static const Color limeGreen = Color(0xFF9CCE00);
   static const Color white = Color(0xFFFFFFFF);
   static const Color lightGrey = Color(0xFFCCCCCC);
@@ -21,7 +22,8 @@ class AppColors {
   static const Color mediumGray = Color(0xFF737373);
   static const Color darkGray = Color(0xFF191919);
   static const Color ivoryTint = Color(0xFFFCFFF3);
-  
+  static const Color softYellowGreen = Color(0xFFE7FF9D);
+
 }
 
 class AppTheme {

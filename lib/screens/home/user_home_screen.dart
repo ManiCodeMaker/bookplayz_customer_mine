@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_constants.dart';
-
+import 'package:flutter_svg/flutter_svg.dart';
 import '../../widgets/venue_filters.dart';
 
 class UserHomeScreen extends StatefulWidget {
@@ -314,24 +314,24 @@ Future<void> _toggleFavorite(int venueId) async {
           ),
 
           // ── Team Games section ──
-          SliverToBoxAdapter(
-            child: _SectionHeader(
-              title: 'Team Games',
-              onSeeAll: () {},
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 160,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _teamGames.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (_, i) => _TeamGameCard(game: _teamGames[i]),
-              ),
-            ),
-          ),
+          // SliverToBoxAdapter(
+          //   child: _SectionHeader(
+          //     title: 'Team Games',
+          //     onSeeAll: () {},
+          //   ),
+          // ),
+          // SliverToBoxAdapter(
+          //   child: SizedBox(
+          //     height: 160,
+          //     child: ListView.separated(
+          //       scrollDirection: Axis.horizontal,
+          //       padding: const EdgeInsets.symmetric(horizontal: 16),
+          //       itemCount: _teamGames.length,
+          //       separatorBuilder: (_, __) => const SizedBox(width: 12),
+          //       itemBuilder: (_, i) => _TeamGameCard(game: _teamGames[i]),
+          //     ),
+          //   ),
+          // ),
 
           // ── Reviews section ──
           SliverToBoxAdapter(
@@ -380,24 +380,24 @@ Future<void> _toggleFavorite(int venueId) async {
 class _StatsGrid extends StatelessWidget {
   final List<Map<String, dynamic>> _stats = const [
     {
-      'title': 'Leave your Stress\nCome and Joy\nwith your Friends',
+      'title': 'Leave your Stress Come and Joy with your Friends',
       'badge': '15 Course',
-      'icon': Icons.self_improvement_rounded,
+      'image': AppImages.homeStats1,
     },
     {
-      'title': 'Great place to\nBook your Venue',
+      'title': 'Great place to Book your Venue',
       'badge': '800+ Venues',
-      'icon': Icons.stadium_rounded,
+      'image': AppImages.homeStats2,
     },
     {
-      'title': 'Train with the\nBest from Us',
+      'title': 'Train with the Best from Us',
       'badge': '258+ Trainers',
-      'icon': Icons.fitness_center_rounded,
+      'image': AppImages.homeStats3,
     },
     {
-      'title': 'Find your play\ntribe partners',
+      'title': 'Find your play tribe partners',
       'badge': null,
-      'icon': Icons.groups_rounded,
+      'image': AppImages.homeStats4,
     },
   ];
 
@@ -413,7 +413,7 @@ class _StatsGrid extends StatelessWidget {
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.35,
+        childAspectRatio: 1.1,
       ),
       itemBuilder: (_, i) => _StatCard(data: _stats[i]),
     );
@@ -426,57 +426,62 @@ class _StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.navyBlue,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.08),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Title text
-          Text(
-            data['title'],
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 11,
-              fontWeight: FontWeight.w500,
-              color: AppColors.white.withValues(alpha: 0.85),
-              height: 1.4,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        color: AppColors.veryDarkBlue,
+        child: Stack(
+          children: [
+            // Text — top-left
+            Positioned(
+              left: 14,
+              top: 14,
+              right: 50,
+              bottom: 14,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    data['title'],
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.softYellowGreen,
+                      height: 1.4,
+                    ),
+                  ),
+                  if (data['badge'] != null) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      data['badge'],
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.white,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
-          ),
 
-          // Badge row
-          if (data['badge'] != null)
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              decoration: BoxDecoration(
-                color: AppColors.limeGreen.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
+            // 3D illustration — bottom-right, clipped by card
+            Positioned(
+              right: 0,
+              bottom: 0,
+              child: Image.asset(
+                data['image'],
+                width: 100,
+                height: 100,
+                fit: BoxFit.contain,
               ),
-              child: Text(
-                data['badge'],
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.limeGreen,
-                ),
-              ),
-            )
-          else
-            Icon(
-              data['icon'] as IconData,
-              color: AppColors.limeGreen.withValues(alpha: 0.6),
-              size: 22,
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -662,128 +667,128 @@ class _PromoBannerCarouselState extends State<_PromoBannerCarousel> {
 }
 
 // ── Team Game Card ────────────────────────────────────────
-class _TeamGameCard extends StatelessWidget {
-  final Map<String, dynamic> game;
-  const _TeamGameCard({required this.game});
+// class _TeamGameCard extends StatelessWidget {
+//   final Map<String, dynamic> game;
+//   const _TeamGameCard({required this.game});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 260,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.2),
-            blurRadius: 8,
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
-        child: Stack(
-          fit: StackFit.expand,
-          children: [
-            // Background image
-            Image.asset(game['image'], fit: BoxFit.cover),
+//   @override
+//   Widget build(BuildContext context) {
+//     return Container(
+//       width: 260,
+//       decoration: BoxDecoration(
+//         borderRadius: BorderRadius.circular(14),
+//         boxShadow: [
+//           BoxShadow(
+//             color: Colors.black.withValues(alpha: 0.2),
+//             blurRadius: 8,
+//           ),
+//         ],
+//       ),
+//       child: ClipRRect(
+//         borderRadius: BorderRadius.circular(14),
+//         child: Stack(
+//           fit: StackFit.expand,
+//           children: [
+//             // Background image
+//             Image.asset(game['image'], fit: BoxFit.cover),
 
-            // Dark overlay
-            Container(
-              color: Colors.black.withValues(alpha: 0.55),
-            ),
+//             // Dark overlay
+//             Container(
+//               color: Colors.black.withValues(alpha: 0.55),
+//             ),
 
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Distance badge
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.limeGreen.withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(Icons.location_on_rounded,
-                            color: AppColors.limeGreen, size: 11),
-                        const SizedBox(width: 3),
-                        Text(
-                          game['distance'],
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.limeGreen,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+//             // Content
+//             Padding(
+//               padding: const EdgeInsets.all(14),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   // Distance badge
+//                   Container(
+//                     padding: const EdgeInsets.symmetric(
+//                         horizontal: 8, vertical: 4),
+//                     decoration: BoxDecoration(
+//                       color: AppColors.limeGreen.withValues(alpha: 0.2),
+//                       borderRadius: BorderRadius.circular(20),
+//                     ),
+//                     child: Row(
+//                       mainAxisSize: MainAxisSize.min,
+//                       children: [
+//                         const Icon(Icons.location_on_rounded,
+//                             color: AppColors.limeGreen, size: 11),
+//                         const SizedBox(width: 3),
+//                         Text(
+//                           game['distance'],
+//                           style: const TextStyle(
+//                             fontFamily: 'Inter',
+//                             fontSize: 10,
+//                             fontWeight: FontWeight.w600,
+//                             color: AppColors.limeGreen,
+//                           ),
+//                         ),
+//                       ],
+//                     ),
+//                   ),
 
-                  const Spacer(),
+//                   const Spacer(),
 
-                  // Match info
-                  Text(
-                    game['team1'],
-                    style: const TextStyle(
-                      fontFamily: 'Jost',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.white,
-                    ),
-                  ),
-                  Text(
-                    game['vs'],
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      color: AppColors.white.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  Text(
-                    game['team2'],
-                    style: const TextStyle(
-                      fontFamily: 'Jost',
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.white,
-                    ),
-                  ),
+//                   // Match info
+//                   Text(
+//                     game['team1'],
+//                     style: const TextStyle(
+//                       fontFamily: 'Jost',
+//                       fontSize: 14,
+//                       fontWeight: FontWeight.w700,
+//                       color: AppColors.white,
+//                     ),
+//                   ),
+//                   Text(
+//                     game['vs'],
+//                     style: TextStyle(
+//                       fontFamily: 'Inter',
+//                       fontSize: 11,
+//                       color: AppColors.white.withValues(alpha: 0.6),
+//                     ),
+//                   ),
+//                   Text(
+//                     game['team2'],
+//                     style: const TextStyle(
+//                       fontFamily: 'Jost',
+//                       fontSize: 14,
+//                       fontWeight: FontWeight.w700,
+//                       color: AppColors.white,
+//                     ),
+//                   ),
 
-                  const SizedBox(height: 10),
+//                   const SizedBox(height: 10),
 
-                  // Register button
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 14, vertical: 7),
-                    decoration: BoxDecoration(
-                      color: AppColors.limeGreen,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      'Register Now',
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.navyBlue,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
+//                   // Register button
+//                   Container(
+//                     padding: const EdgeInsets.symmetric(
+//                         horizontal: 14, vertical: 7),
+//                     decoration: BoxDecoration(
+//                       color: AppColors.limeGreen,
+//                       borderRadius: BorderRadius.circular(8),
+//                     ),
+//                     child: Text(
+//                       'Register Now',
+//                       style: TextStyle(
+//                         fontFamily: 'Inter',
+//                         fontSize: 12,
+//                         fontWeight: FontWeight.w700,
+//                         color: AppColors.navyBlue,
+//                       ),
+//                     ),
+//                   ),
+//                 ],
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }
 
 // ── Map Banner ────────────────────────────────────────────
 class _MapBanner extends StatelessWidget {
