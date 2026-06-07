@@ -23,7 +23,7 @@ class _UserBottomNavState extends State<UserBottomNav> {
     _NavItem(icon: AppImages.userNavHome, label: 'Home'),
     _NavItem(icon: AppImages.userNavVenue, label: 'Venue'),
     _NavItem(icon: AppImages.userNavBooking, label: 'My Booking'),
-    _NavItem(icon: AppImages.userNavGames, label: 'Games'),
+    // _NavItem(icon: AppImages.userNavGames, label: 'Games'), // hidden by client request
     _NavItem(icon: AppImages.userNavProfile, label: 'Profile'),
   ];
 

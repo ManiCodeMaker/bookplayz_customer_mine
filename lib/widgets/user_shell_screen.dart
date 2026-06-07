@@ -67,10 +67,10 @@ class _UserShellScreenState extends State<UserShellScreen>
       // Pop any open profile sub-route back to home first
       _profileNavigatorKey.currentState?.popUntil((r) => r.isFirst);
       // Switch to the profile tab if not already there
-      if (_navIndex != 4) {
+      if (_navIndex != 3) {
         setState(() {
-          _history.add(4);
-          _navIndex = 4;
+          _history.add(3);
+          _navIndex = 3;
         });
       }
       // Push the favorites screen and mark nav as in sub-route
@@ -95,7 +95,7 @@ class _UserShellScreenState extends State<UserShellScreen>
   void _onNavTap(int i) {
     if (i == _navIndex) return;
     if (i != 0) _scrollProgress.value = 0.0;
-    if (_navIndex == 4 && i != 4) {
+    if (_navIndex == 3 && i != 3) {
       _profileNavigatorKey.currentState?.popUntil((route) => route.isFirst);
       _profileInSubRoute = false;
     }
@@ -141,7 +141,6 @@ class _UserShellScreenState extends State<UserShellScreen>
         navigatorKey: _bookingNavigatorKey,
         onBack:       _goBack,
       ),
-      const SizedBox.shrink(),
       ProfileScreen(
         navigatorKey: _profileNavigatorKey,
         onBack: _goBack,
@@ -195,7 +194,7 @@ class _UserShellScreenState extends State<UserShellScreen>
               ),
             ],
           ),
-          bottomNavigationBar: (_navIndex == 4 && _profileInSubRoute)
+          bottomNavigationBar: (_navIndex == 3 && _profileInSubRoute)
               ? null
               : Padding(
                   padding: const EdgeInsets.only(top: 12, bottom: 10),
@@ -227,7 +226,7 @@ class _UserShellScreenState extends State<UserShellScreen>
                 onClose: _closeDrawer,
                 onHomeTap: () => _onNavTap(0),
                 onBookingTap: () => _onNavTap(2),
-                onProfileTap: () => _onNavTap(4),
+                onProfileTap: () => _onNavTap(3),
                 onWishListTap: _openFavoritesInProfile,
                 onLogout: _onLogout,
               ),
