@@ -57,6 +57,10 @@ class HeroBanner extends StatelessWidget {
   /// e.g. the "Up To 70% OFF" promo card in Image 1.
   final Widget? promoOverlay;
 
+  /// Scroll-driven collapse progress: 0.0 = fully expanded, 1.0 = collapsed.
+  /// Only meaningful on the home tab where showCarousel is true.
+  final double scrollProgress;
+
   const HeroBanner({
     super.key,
     // background
@@ -78,25 +82,31 @@ class HeroBanner extends StatelessWidget {
     this.onSearchTap,
     // promo
     this.promoOverlay,
+    // scroll animation
+    this.scrollProgress = 0.0,
   });
 
   // ── Height calculation ──────────────────────────────────────
-  double get _height {
+  // minH is dynamic: status-bar safe area + TopBar's own padding (20) + icon row (40).
+  double _computeHeight(BuildContext context) {
     if (showCarousel) {
-      // Carousel: tall banner. Extra room if search + promo are shown.
-      double h = 220;
-      if (showSearch) h += 54;
-      if (promoOverlay != null) h += 80;
-      return h;
+      double maxH = 220;
+      if (showSearch) maxH += 54;
+      if (promoOverlay != null) maxH += 80;
+      final double minH = MediaQuery.of(context).padding.top + 90;
+      return maxH + (minH - maxH) * scrollProgress;
     }
-    // Static header: compact.
-    return showSearch ? 160 : 108;
+    // Static header: compact — minimum 130 so the banner has visible presence.
+    return showSearch ? 160 : 130;
   }
+
+  // Elements that should fade as the banner collapses (search bar + dots).
+  double get _fadeOpacity => (1.0 - scrollProgress * 2.0).clamp(0.0, 1.0);
 
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: _height,
+      height: _computeHeight(context),
       child: Stack(
         children: [
           // ── 1. Background ────────────────────────────────────
@@ -117,11 +127,20 @@ class HeroBanner extends StatelessWidget {
                 showNotificationBadge: showNotificationBadge,
               ),
               if (showSearch)
-                HeroBannerSearchBar(
-                  hint: searchHint,
-                  controller: searchController,
-                  onChanged: onSearchChanged,
-                  onTap: onSearchTap,
+                SizedBox(
+                  // Shrink allocated height as it fades so the Column never overflows.
+                  height: (62.0 * _fadeOpacity).clamp(0.0, 62.0),
+                  child: ClipRect(
+                    child: Opacity(
+                      opacity: _fadeOpacity,
+                      child: HeroBannerSearchBar(
+                        hint: searchHint,
+                        controller: searchController,
+                        onChanged: onSearchChanged,
+                        onTap: onSearchTap,
+                      ),
+                    ),
+                  ),
                 ),
             ],
           ),
@@ -141,17 +160,20 @@ class HeroBanner extends StatelessWidget {
               bottom: 10,
               left: 0,
               right: 0,
-              child: Center(
-                child: SmoothPageIndicator(
-                  controller: controller!,
-                  count: carouselCount,
-                  effect: ExpandingDotsEffect(
-                    activeDotColor: AppColors.limeGreen,
-                    dotColor: AppColors.white.withValues(alpha: 0.4),
-                    dotHeight: 6,
-                    dotWidth: 6,
-                    expansionFactor: 2.5,
-                    spacing: 5,
+              child: Opacity(
+                opacity: _fadeOpacity,
+                child: Center(
+                  child: SmoothPageIndicator(
+                    controller: controller!,
+                    count: carouselCount,
+                    effect: ExpandingDotsEffect(
+                      activeDotColor: AppColors.limeGreen,
+                      dotColor: AppColors.white.withValues(alpha: 0.4),
+                      dotHeight: 6,
+                      dotWidth: 6,
+                      expansionFactor: 2.5,
+                      spacing: 5,
+                    ),
                   ),
                 ),
               ),
@@ -182,7 +204,7 @@ class HeroBanner extends StatelessWidget {
       return PageView.builder(
         controller: controller!,
         itemCount: carouselCount,
-        itemBuilder: (_, __) => Image.asset(
+        itemBuilder: (_, i) => Image.asset(
           assetPath,
           fit: BoxFit.cover,
           width: double.infinity,
@@ -209,8 +231,8 @@ class HeroBanner extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                Colors.black.withOpacity(0.15),
-                AppColors.navyBlue.withOpacity(0.85),
+                Colors.black.withValues(alpha: 0.15),
+                AppColors.navyBlue.withValues(alpha: 0.85),
               ],
               stops: const [0.3, 1.0],
             ),
@@ -230,8 +252,8 @@ class HeroBanner extends StatelessWidget {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.black.withOpacity(0.45),
-                  Colors.black.withOpacity(0.0),
+                  Colors.black.withValues(alpha: 0.45),
+                  Colors.black.withValues(alpha: 0.0),
                 ],
                 stops: const [0.0, 0.6],
               ),

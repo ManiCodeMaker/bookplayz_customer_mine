@@ -337,8 +337,12 @@ Stack(
               child: Row(
                 children: [
                   const SizedBox(width: 14),
-                  Icon(Icons.search_rounded,
-                      color: AppColors.white.withValues(alpha: 0.5), size: 20),
+                  Image.asset(
+                    AppImages.searchIcon,
+                    width: 20,
+                    height: 20,
+                    color: AppColors.white,
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(

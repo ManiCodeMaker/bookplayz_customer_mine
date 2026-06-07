@@ -31,6 +31,9 @@ class _UserShellScreenState extends State<UserShellScreen>
   final GlobalKey<MyBookingScreenState> _bookingKey = GlobalKey<MyBookingScreenState>();
   final GlobalKey<VenuesScreenState> _venuesKey = GlobalKey<VenuesScreenState>();
 
+  final ValueNotifier<double> _scrollProgress = ValueNotifier(0.0);
+  static const double _collapseThreshold = 100.0;
+
   bool _drawerOpen = false;
   bool _profileInSubRoute = false;
   late AnimationController _drawerAnim;
@@ -91,6 +94,7 @@ class _UserShellScreenState extends State<UserShellScreen>
 
   void _onNavTap(int i) {
     if (i == _navIndex) return;
+    if (i != 0) _scrollProgress.value = 0.0;
     if (_navIndex == 4 && i != 4) {
       _profileNavigatorKey.currentState?.popUntil((route) => route.isFirst);
       _profileInSubRoute = false;
@@ -148,6 +152,7 @@ class _UserShellScreenState extends State<UserShellScreen>
 
   @override
   void dispose() {
+    _scrollProgress.dispose();
     _heroController.dispose();
     _drawerAnim.dispose();
     super.dispose();
@@ -161,18 +166,31 @@ class _UserShellScreenState extends State<UserShellScreen>
           backgroundColor: AppColors.navyBlue,
           body: Column(
             children: [
-              HeroBanner(
-                showCarousel: _navIndex == 0,
-                controller: _navIndex == 0 ? _heroController : null,
-                showSearch: true,
-                onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
-                showNotificationBadge: true,
-                 onMenuTap: _openDrawer, 
+              ValueListenableBuilder<double>(
+                valueListenable: _scrollProgress,
+                builder: (_, progress, _) => HeroBanner(
+                  scrollProgress: _navIndex == 0 ? progress : 0.0,
+                  showCarousel: _navIndex == 0,
+                  controller: _navIndex == 0 ? _heroController : null,
+                  showSearch: _navIndex == 0,
+                  onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
+                  showNotificationBadge: false,
+                  onMenuTap: _openDrawer,
+                ),
               ),
               Expanded(
-                child: IndexedStack(
-                  index: _navIndex,
-                  children: _screens,
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: (n) {
+                    if (_navIndex == 0) {
+                      _scrollProgress.value =
+                          (n.metrics.pixels / _collapseThreshold).clamp(0.0, 1.0);
+                    }
+                    return false;
+                  },
+                  child: IndexedStack(
+                    index: _navIndex,
+                    children: _screens,
+                  ),
                 ),
               ),
             ],

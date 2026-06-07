@@ -57,11 +57,21 @@ class UserSideDrawer extends StatelessWidget {
                               border: Border.all(color: Colors.white, width: 2),
                             ),
                             child: ClipOval(
-                              child: Icon(
-                                Icons.person_rounded,
-                                color: AppColors.navyBlue,
-                                size: 30,
-                              ),
+                              child: (user?.profileImage ?? '').isNotEmpty
+                                  ? Image.network(
+                                      user!.profileImage!,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (ctx, err, stack) => const Icon(
+                                        Icons.person_rounded,
+                                        color: AppColors.navyBlue,
+                                        size: 30,
+                                      ),
+                                    )
+                                  : const Icon(
+                                      Icons.person_rounded,
+                                      color: AppColors.navyBlue,
+                                      size: 30,
+                                    ),
                             ),
                           ),
                           const SizedBox(width: 14),
