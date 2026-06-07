@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/screens/home/user_home_screen.dart';
 import 'package:bookplayz/screens/my-booking/my_booking_screen.dart';
+import 'package:bookplayz/screens/profile/profile_screen.dart';
 import 'package:bookplayz/screens/venues/venues.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
@@ -122,7 +123,10 @@ class _UserShellScreenState extends State<UserShellScreen>
         onBack:       _goBack,
       ),
       const SizedBox.shrink(),
-      const SizedBox.shrink(),
+      ProfileScreen(
+        navigatorKey: _profileNavigatorKey,
+        onBack: _goBack,
+      ),
     ];
   }
 

@@ -33,6 +33,13 @@ class AuthApi {
   }
 }
 
+// ── Profile ───────────────────────────────────────────────────────────────────
+class ProfileApi {
+  ProfileApi._();
+  static const String me = '${ApiConstants.baseUrl}/auth/me';
+  static const String verifyEmailRequest = '${ApiConstants.baseUrl}/auth/verify-email/request';
+}
+
 // ── Venues ────────────────────────────────────────────────────────────────────
 class VenueApi {
   VenueApi._();

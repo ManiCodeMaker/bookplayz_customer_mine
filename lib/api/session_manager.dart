@@ -20,6 +20,7 @@ class SessionManager {
   String? _city;
 
   SessionUser? get currentUser    => _user;
+  set user(SessionUser? u)        => _user = u;
   String?      get accessToken    => _accessToken;
   bool         get isLoggedIn     => _accessToken != null && _user != null;
   double?      get latitude       => _latitude;
@@ -147,6 +148,9 @@ class SessionUser {
   final String? email;
   final String  role;
   final String  status;
+  final bool    emailVerified;
+  final bool    mobileVerified;
+  final String? profileImage;
 
   const SessionUser({
     required this.id,
@@ -155,23 +159,51 @@ class SessionUser {
     this.email,
     required this.role,
     required this.status,
+    this.emailVerified  = false,
+    this.mobileVerified = false,
+    this.profileImage,
   });
 
   factory SessionUser.fromJson(Map<String, dynamic> j) => SessionUser(
-    id:       j['id'] as int,
-    mobile:   j['mobile'] as String,
-    fullName: j['fullName'] as String? ?? '',
-    email:    j['email'] as String?,
-    role:     j['role'] as String,
-    status:   j['status'] as String,
+    id:             j['id'] as int,
+    mobile:         j['mobile'] as String,
+    fullName:       j['fullName'] as String? ?? '',
+    email:          j['email'] as String?,
+    role:           j['role'] as String,
+    status:         j['status'] as String,
+    emailVerified:  j['emailVerified'] as bool? ?? false,
+    mobileVerified: j['mobileVerified'] as bool? ?? false,
+    profileImage:   j['profileImage'] as String?,
   );
 
   Map<String, dynamic> toJson() => {
-    'id':       id,
-    'mobile':   mobile,
-    'fullName': fullName,
-    'email':    email,
-    'role':     role,
-    'status':   status,
+    'id':             id,
+    'mobile':         mobile,
+    'fullName':       fullName,
+    'email':          email,
+    'role':           role,
+    'status':         status,
+    'emailVerified':  emailVerified,
+    'mobileVerified': mobileVerified,
+    'profileImage':   profileImage,
   };
+
+  SessionUser copyWith({
+    String? fullName,
+    String? email,
+    String? mobile,
+    bool?   emailVerified,
+    bool?   mobileVerified,
+    String? profileImage,
+  }) => SessionUser(
+    id:             id,
+    mobile:         mobile         ?? this.mobile,
+    fullName:       fullName       ?? this.fullName,
+    email:          email          ?? this.email,
+    role:           role,
+    status:         status,
+    emailVerified:  emailVerified  ?? this.emailVerified,
+    mobileVerified: mobileVerified ?? this.mobileVerified,
+    profileImage:   profileImage   ?? this.profileImage,
+  );
 }
