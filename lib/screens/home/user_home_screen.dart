@@ -225,7 +225,7 @@ Future<void> _toggleFavorite(int venueId) async {
           // ── Map banner ──
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+              padding: const EdgeInsets.fromLTRB(16, 28, 16, 0),
               child: _MapBanner(),
             ),
           ),
@@ -791,73 +791,83 @@ class _MapBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () => Navigator.pushNamed(context, AppRoutes.venueMap),
-      child: Container(
-      height: 90,
-      decoration: BoxDecoration(
-        color: AppColors.limeGreen,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          // Map image
-          Padding(
-            padding: const EdgeInsets.only(left: 8),
-            child: Image.asset(
-              AppImages.mapImage,
-              width: 100,
-              height: 90,
-              fit: BoxFit.contain,
+          // Green container — fills the Stack (sizes the Stack to 90px)
+          Container(
+            height: 90,
+            decoration: BoxDecoration(
+              color: AppColors.limeGreen,
+              borderRadius: BorderRadius.circular(14),
             ),
-          ),
-
-          // Text
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Text(
-                  'Find the Venue',
-                  style: TextStyle(
-                    fontFamily: 'AtlanticBentley',
-                    fontSize: 18,
-                    color: AppColors.navyBlue,
-                    height: 1.0,
+                // Reserve space where the image overlaps the box
+                const SizedBox(width: 150),
+
+                // Text
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Find the Venue',
+                        style: TextStyle(
+                          fontFamily: 'AtlanticBentley',
+                          fontSize: 20,
+                          color: AppColors.navyBlue,
+                          height: 1.0,
+                        ),
+                      ),
+                      Text(
+                        'NEAR YOUR',
+                        style: TextStyle(
+                          fontFamily: 'Anton',
+                          fontSize: 22,
+                          color: AppColors.navyBlue,
+                          height: 1.1,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  'NEAR YOUR',
-                  style: TextStyle(
-                    fontFamily: 'Anton',
-                    fontSize: 20,
-                    color: AppColors.navyBlue,
-                    height: 1.1,
+
+                // Arrow
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: Container(
+                    width: 30,
+                    height: 40,
+                    // decoration: BoxDecoration(
+                    //   color: AppColors.navyBlue.withValues(alpha: 0.15),
+                    //   shape: BoxShape.circle,
+                    // ),
+                    child: const Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.white,
+                      size: 40,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // Arrow
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.navyBlue.withValues(alpha: 0.15),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.navyBlue,
-                size: 22,
-              ),
+          // Map image — negative top makes it overflow above the green box
+          Positioned(
+            left: 0,
+            top: -25,
+            child: Image.asset(
+              AppImages.mapImage,
+              width: 150,
+              height: 120,
+              fit: BoxFit.fill,
             ),
           ),
         ],
       ),
-    ), // Container
-    ); // GestureDetector
+    );
   }
 }

@@ -182,7 +182,7 @@ class HeroBanner extends StatelessWidget {
               bottom: 0,
               left: 0,
               right: 0,
-              height: 40,
+              height: showCarousel ? 60 : 40,
               child: Image.asset(
                 AppImages.brushStrokePanel,
                 fit: BoxFit.fill,

@@ -46,6 +46,13 @@ class AppImages {
   static const String bookingPrice = 'assets/images/booking-price-icon.png';
   static const String bookingTime = 'assets/images/booking-time-icon.png';
 
+
+  static const String homeStats1 = 'assets/images/homeStats/user_stats_1.png';
+  static const String homeStats2 = 'assets/images/homeStats/user_stats_2.png';
+  static const String homeStats3 = 'assets/images/homeStats/user_stats_3.png';
+  static const String homeStats4 = 'assets/images/homeStats/user_stats_4.png';
+
+
 }
 
 class AppRoutes {
