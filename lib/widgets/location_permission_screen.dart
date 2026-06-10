@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:flutter/material.dart';
 
 class LocationPermissionScreen extends StatefulWidget {
@@ -135,14 +136,7 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
                       ),
                       const SizedBox(width: 10),
                       _loading
-                          ? SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: AppColors.navyBlue,
-                              ),
-                            )
+                          ? const AppLoader(size: 20)
                           : const Icon(Icons.near_me_rounded, size: 20),
                     ],
                   ),

@@ -2,6 +2,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/venue_cards.dart';
 import 'package:flutter/material.dart';
 
@@ -135,9 +136,7 @@ class _FavScreenState extends State<FavScreen> {
           // ── Body ──────────────────────────────────────────────────────────
           Expanded(
             child: _loading
-                ? const Center(
-                    child: CircularProgressIndicator(color: AppColors.limeGreen),
-                  )
+                ? const Center(child: AppLoader())
                 : _error != null
                     ? _ErrorView(error: _error!, onRetry: _load)
                     : _venues.isEmpty

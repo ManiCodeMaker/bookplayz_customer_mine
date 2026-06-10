@@ -3,6 +3,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:bookplayz/theme/app_constants.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/venue_cards.dart';
 import 'package:flutter/material.dart';
 
@@ -454,9 +455,7 @@ Stack(
         // ── Venue list ──
         Expanded(
           child: _loading
-              ? const Center(
-                  child: CircularProgressIndicator(
-                      color: AppColors.limeGreen))
+              ? const Center(child: AppLoader())
               : _error != null
                   ? Center(
                       child: Column(
@@ -494,10 +493,7 @@ Stack(
                             if (i == _filtered.length) {
                               return const Padding(
                                 padding: EdgeInsets.symmetric(vertical: 20),
-                                child: Center(
-                                  child: CircularProgressIndicator(
-                                      color: AppColors.limeGreen),
-                                ),
+                                child: Center(child: AppLoader()),
                               );
                             }
                             return Padding(

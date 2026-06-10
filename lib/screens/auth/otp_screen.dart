@@ -1,6 +1,8 @@
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:smart_auth/smart_auth.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_constants.dart';
 import '../../api/api_constants.dart';
@@ -26,6 +28,7 @@ class _OtpScreenState extends State<OTPScreen>
 
   String _phoneNumber = '';
   bool _loading = false;
+  final _smartAuth = SmartAuth();
 
   @override
   void didChangeDependencies() {
@@ -69,13 +72,30 @@ class _OtpScreenState extends State<OTPScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _staggerController.forward();
     });
+
+    _listenForSms();
+  }
+
+  Future<void> _listenForSms() async {
+    final result = await _smartAuth.getSmsCode(
+      useUserConsentApi: true,
+      matcher: r'\d{4}',
+    );
+    if (!mounted || !result.codeFound) return;
+    final digits = result.code!;
+    for (int i = 0; i < 4; i++) {
+      _controllers[i].text = digits[i];
+    }
+    setState(() {});
+    Future.microtask(_onContinue);
   }
 
   @override
   void dispose() {
+    _smartAuth.removeSmsListener();
     _staggerController.dispose();
-    for (final c in _controllers) c.dispose();
-    for (final f in _focusNodes) f.dispose();
+    for (final c in _controllers) { c.dispose(); }
+    for (final f in _focusNodes) { f.dispose(); }
     super.dispose();
   }
 
@@ -125,7 +145,7 @@ class _OtpScreenState extends State<OTPScreen>
     } catch (e) {
       if (!mounted) return;
       // Clear OTP boxes on wrong OTP
-      for (final c in _controllers) c.clear();
+      for (final c in _controllers) { c.clear(); }
       _focusNodes[0].requestFocus();
       AppSnackbar.showError(context, e.toString());
     } finally {
@@ -134,7 +154,7 @@ class _OtpScreenState extends State<OTPScreen>
   }
 
   Future<void> _onResend() async {
-    for (final c in _controllers) c.clear();
+    for (final c in _controllers) { c.clear(); }
     _focusNodes[0].requestFocus();
     _staggerController.reset();
     _staggerController.forward();
@@ -297,11 +317,7 @@ class _OtpScreenState extends State<OTPScreen>
                             borderRadius: BorderRadius.circular(8)),
                       ),
                       child: _loading
-                          ? const SizedBox(
-                              width: 22, height: 22,
-                              child: CircularProgressIndicator(
-                                  color: AppColors.white, strokeWidth: 2.5),
-                            )
+                          ? const AppLoader(size: 22)
                           : const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [

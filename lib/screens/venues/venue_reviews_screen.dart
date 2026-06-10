@@ -2,6 +2,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/venue_review_model.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -172,10 +173,7 @@ class _VenueReviewsScreenState extends State<VenueReviewsScreen> {
                         BorderRadius.vertical(top: Radius.circular(24)),
                   ),
                   child: _loading
-                      ? const Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.navyBlue),
-                        )
+                      ? const Center(child: AppLoader())
                       : _error != null
                           ? _buildError()
                           : _buildContent(),
@@ -274,10 +272,7 @@ class _VenueReviewsScreenState extends State<VenueReviewsScreen> {
                     if (_loadingMore) {
                       return const Padding(
                         padding: EdgeInsets.all(16),
-                        child: Center(
-                          child: CircularProgressIndicator(
-                              color: AppColors.navyBlue),
-                        ),
+                        child: Center(child: AppLoader()),
                       );
                     }
                     if (!_hasMore) {

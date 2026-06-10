@@ -5,6 +5,7 @@ import 'package:bookplayz/models/venue_review_model.dart';
 import 'package:bookplayz/screens/venues/booking_screen.dart';
 import 'package:bookplayz/screens/venues/venue_reviews_screen.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/user_shell_screen.dart';
 import 'package:bookplayz/widgets/venue_filters.dart';
 import 'package:flutter/material.dart';
@@ -92,7 +93,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       extendBodyBehindAppBar: true, // body goes behind status bar
       backgroundColor: AppColors.navyBlue,
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.limeGreen))
+          ? const Center(child: AppLoader())
           : _error != null
               ? _ErrorView(error: _error!, onRetry: () {
                   setState(() { _loading = true; _error = null; });
@@ -775,8 +776,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             const Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 16),
-                child: CircularProgressIndicator(
-                    color: AppColors.limeGreen, strokeWidth: 2),
+                child: AppLoader(),
               ),
             )
           else if (_reviewsError != null)

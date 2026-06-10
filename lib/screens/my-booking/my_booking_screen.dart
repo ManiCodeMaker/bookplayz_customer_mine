@@ -4,6 +4,7 @@ import 'package:bookplayz/models/my_booking_model.dart';
 import 'package:bookplayz/screens/my-booking/booking_detail_screen.dart';
 import 'package:bookplayz/screens/my-booking/write_review.dart';
 import 'package:bookplayz/theme/app_constants.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -225,10 +226,7 @@ class _BookingHomeState extends State<_BookingHome> {
                       backgroundColor: AppColors.navyBlue,
                       onRefresh: () async => widget.onRefresh?.call(),
                       child: widget.loading
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                  color: AppColors.limeGreen),
-                            )
+                          ? const Center(child: AppLoader())
                           : widget.loadError != null
                               ? ListView(
                                   physics: const AlwaysScrollableScrollPhysics(),
@@ -473,12 +471,7 @@ class _BookingCardState extends State<_BookingCard> {
                                     width: 120,
                                     color: AppColors.navyBlue
                                         .withValues(alpha: 0.3),
-                                    child: const Center(
-                                      child: CircularProgressIndicator(
-                                        color:       AppColors.limeGreen,
-                                        strokeWidth: 2,
-                                      ),
-                                    ),
+                                    child: const Center(child: AppLoader(size: 60)),
                                   ),
                       )
                     : Image.asset(

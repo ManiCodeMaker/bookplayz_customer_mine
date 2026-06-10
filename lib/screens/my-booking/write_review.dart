@@ -4,6 +4,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/models/my_booking_model.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -388,8 +389,7 @@ class _WriteReviewSheetState extends State<WriteReviewSheet> {
                     ? const Center(
                         child: Padding(
                           padding: EdgeInsets.all(40),
-                          child: CircularProgressIndicator(
-                              color: AppColors.limeGreen),
+                          child: AppLoader(),
                         ),
                       )
                     : SingleChildScrollView(
@@ -539,12 +539,7 @@ class _WriteReviewSheetState extends State<WriteReviewSheet> {
                                           vertical: 14),
                                     ),
                                     child: _submitting
-                                        ? const SizedBox(
-                                            width: 18, height: 18,
-                                            child: CircularProgressIndicator(
-                                                color: Colors.white,
-                                                strokeWidth: 2),
-                                          )
+                                        ? const AppLoader(size: 18)
                                         : Text(
                                             _isEdit
                                                 ? 'Update Review'

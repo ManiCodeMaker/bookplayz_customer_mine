@@ -2,6 +2,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/venue_cards.dart';
 import 'package:flutter/material.dart';
 
@@ -97,7 +98,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
         ),
       ),
       body: _loading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(child: AppLoader())
           : _venues.isEmpty
               ? Center(
                   child: Column(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../../theme/app_theme.dart';
+import 'app_loader.dart';
 
 // ── Sport Filter Chips Row ────────────────────────────────
 class SportFilterRow extends StatelessWidget {
@@ -132,14 +133,7 @@ class SportFilterCard extends StatelessWidget {
           width: 36,
           height: 36,
           colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-          placeholderBuilder: (_) => SizedBox(
-            width: 36,
-            height: 36,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.5,
-              color: iconColor.withValues(alpha: 0.4),
-            ),
-          ),
+          placeholderBuilder: (_) => const AppLoader(size: 36),
         );
       } else {
         // JPEG/PNG network image (e.g. Basketball)

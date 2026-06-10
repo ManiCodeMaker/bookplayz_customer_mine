@@ -4,6 +4,7 @@ import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/models/booking_model.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/screens/venues/booking_confirmation_screen.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -368,7 +369,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
     return Scaffold(
       backgroundColor: AppColors.navyBlue,
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.limeGreen))
+          ? const Center(child: AppLoader())
           : _error != null
               ? _buildError()
              
@@ -759,9 +760,7 @@ Widget _buildPaymentContent() {
                   ),
                   child: Center(
                     child: _couponLoading
-                        ? const SizedBox(width: 18, height: 18,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                        ? const AppLoader(size: 18)
                         : const Text('Apply',
                             style: TextStyle(fontFamily: 'Inter',
                                 fontSize: 14, fontWeight: FontWeight.w700,
@@ -823,9 +822,7 @@ Widget _buildPaymentContent() {
               child: Center(
                 child: _paymentLoading
                     ? const Row(mainAxisSize: MainAxisSize.min, children: [
-                        SizedBox(width: 20, height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white)),
+                        AppLoader(size: 20),
                         SizedBox(width: 10),
                         Text('Processing…',
                             style: TextStyle(fontFamily: 'Jost',

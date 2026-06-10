@@ -4,6 +4,7 @@ import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/screens/venues/booking_summary_screen.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -292,10 +293,7 @@ class _BookingScreenState extends State<BookingScreen> {
                         const Padding(
                           padding: EdgeInsets.symmetric(
                               horizontal: 20, vertical: 16),
-                          child: Center(
-                            child: CircularProgressIndicator(
-                                color: AppColors.limeGreen),
-                          ),
+                          child: Center(child: AppLoader()),
                         )
                       else if (_subcategories.isEmpty)
                         Padding(
@@ -781,10 +779,7 @@ class _BookingScreenState extends State<BookingScreen> {
 
                     // Time slots
                     _availabilityLoading
-                        ? const Center(
-                            child: CircularProgressIndicator(
-                                color: AppColors.limeGreen),
-                          )
+                        ? const Center(child: AppLoader())
                         : _buildTimeSlots(),
                   ],
                 ),

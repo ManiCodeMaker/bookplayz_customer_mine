@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -173,11 +174,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: _loading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.limeGreen,
-                      ),
-                    )
+                  ? const Center(child: AppLoader())
                   : _error != null
                       ? _buildError()
                       : _buildBody(),

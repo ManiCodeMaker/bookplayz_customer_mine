@@ -3,6 +3,7 @@ import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/promo_banner_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/invite_friend_banner.dart';
 import 'package:bookplayz/widgets/review_carousel.dart';
 import 'package:bookplayz/widgets/venue_cards.dart';
@@ -266,10 +267,7 @@ Future<void> _toggleFavorite(int venueId) async {
                     // ── Venue cards list ──
           if (_venuesLoading)
             const SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Center(child: CircularProgressIndicator(color: AppColors.limeGreen)),
-              ),
+              child: const Center(child: AppLoader()),
             )
           else if (_venuesError != null)
             SliverToBoxAdapter(

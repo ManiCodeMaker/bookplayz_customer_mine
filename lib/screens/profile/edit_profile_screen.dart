@@ -4,6 +4,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -168,7 +169,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     return Scaffold(
       backgroundColor: AppColors.navyBlue,
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.limeGreen))
+          ? const Center(child: AppLoader())
           : _error != null
               ? _ErrorView(error: _error!, onRetry: _fetchProfile)
               : SingleChildScrollView(
@@ -307,13 +308,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                   ),
                                 ),
                                 child: _isSaving
-                                    ? const SizedBox(
-                                        width: 22, height: 22,
-                                        child: CircularProgressIndicator(
-                                          color: AppColors.navyBlue,
-                                          strokeWidth: 2.5,
-                                        ),
-                                      )
+                                    ? const AppLoader(size: 22)
                                     : const Row(
                                         mainAxisAlignment: MainAxisAlignment.center,
                                         children: [
@@ -446,11 +441,7 @@ class _UnverifiedBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               child: isSending
-                  ? const SizedBox(
-                      width: 14, height: 14,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2),
-                    )
+                  ? const AppLoader(size: 14)
                   : const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -688,11 +679,7 @@ class _VerifyEmailSheetState extends State<_VerifyEmailSheet>
                         ),
                       ),
                       child: _loading
-                          ? const SizedBox(
-                              width: 22, height: 22,
-                              child: CircularProgressIndicator(
-                                  color: AppColors.navyBlue, strokeWidth: 2.5),
-                            )
+                          ? const AppLoader(size: 22)
                           : const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [

@@ -6,6 +6,7 @@
   import '../../theme/app_constants.dart';
   import 'package:flutter_svg/flutter_svg.dart';
   import '../../api/api_constants.dart';
+  import '../../widgets/app_loader.dart';
   import '../../widgets/app_snackbar.dart';
 
 
@@ -260,11 +261,7 @@
                 RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
           child: loading
-              ? const SizedBox(
-                  width: 22, height: 22,
-                  child: CircularProgressIndicator(
-                    color: AppColors.white, strokeWidth: 2.5),
-                )
+              ? const AppLoader(size: 22)
               : Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
