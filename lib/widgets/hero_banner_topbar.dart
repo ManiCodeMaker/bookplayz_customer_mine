@@ -13,6 +13,7 @@ class HeroBannerTopBar extends StatelessWidget {
   final VoidCallback? onMenuTap;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onLocationTap;
+  final VoidCallback? onResetTap;
   final bool showNotificationBadge;
 
   const HeroBannerTopBar({
@@ -22,6 +23,7 @@ class HeroBannerTopBar extends StatelessWidget {
     this.onMenuTap,
     this.onNotificationTap,
     this.onLocationTap,
+    this.onResetTap,
     this.showNotificationBadge = false,
   });
 
@@ -93,7 +95,32 @@ class HeroBannerTopBar extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
+
+            // ── Reset-to-GPS button (only shown when a city is selected) ──
+            if (onResetTap != null)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: GestureDetector(
+                  onTap: onResetTap,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: AppColors.limeGreen.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.gps_fixed_rounded,
+                      color: AppColors.limeGreen,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ),
 
             // ── Notification button ──
             _CircleIconBtn(

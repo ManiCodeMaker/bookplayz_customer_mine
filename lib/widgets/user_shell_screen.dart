@@ -49,8 +49,28 @@ class _UserShellScreenState extends State<UserShellScreen>
   Future<void> _openCityPicker() async {
     final city = await showCityPickerSheet(context);
     if (city == null || !mounted) return;
-    // Refresh both home and venues with the new city
     _venuesKey.currentState?.refresh();
+  }
+
+  Future<void> _resetToGps() async {
+    await SessionManager.instance.clearCity();
+    if (!mounted) return;
+    await Navigator.pushNamed(context, AppRoutes.locationPermission);
+    if (!mounted) return;
+    // GPS lat/lng may have changed — force topbar to rebuild with updated state.
+    setState(() {});
+    _venuesKey.currentState?.refresh();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          SessionManager.instance.latitude != null
+              ? 'Location updated to current GPS'
+              : 'Location permission not granted',
+        ),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _closeDrawer() {
@@ -186,8 +206,13 @@ class _UserShellScreenState extends State<UserShellScreen>
                     showNotificationBadge: false,
                     onMenuTap: _openDrawer,
                     onLocationTap: _openCityPicker,
-                    city: city ?? 'Select City',
-                    address: city != null ? 'Tap to change location' : 'Search for your city',
+                    onResetTap: city != null ? _resetToGps : null,
+                    city: city ?? (SessionManager.instance.latitude != null ? 'Near You' : 'Select City'),
+                    address: city != null
+                        ? 'Tap to change location'
+                        : (SessionManager.instance.latitude != null
+                            ? 'Using current location'
+                            : 'Search for your city'),
                   ),
                 ),
               ),

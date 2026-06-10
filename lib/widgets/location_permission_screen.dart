@@ -20,7 +20,13 @@ class _LocationPermissionScreenState extends State<LocationPermissionScreen> {
     await SessionManager.instance.fetchAndStoreLocation();
     setState(() => _loading = false);
     if (!mounted) return;
-    Navigator.pushReplacementNamed(context, AppRoutes.home);
+    // Opened from the shell (GPS reset flow) → pop back.
+    // Opened from login flow → replace with home.
+    if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRoutes.home);
+    }
   }
 
   @override

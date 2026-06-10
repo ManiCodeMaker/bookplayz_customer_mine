@@ -40,6 +40,7 @@ class HeroBanner extends StatelessWidget {
   final VoidCallback? onMenuTap;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onLocationTap;
+  final VoidCallback? onResetTap;
   final bool showNotificationBadge;
 
   // ── Search bar ──
@@ -75,6 +76,7 @@ class HeroBanner extends StatelessWidget {
     this.onMenuTap,
     this.onNotificationTap,
     this.onLocationTap,
+    this.onResetTap,
     this.showNotificationBadge = false,
     // search
     this.showSearch = false,
@@ -127,6 +129,7 @@ class HeroBanner extends StatelessWidget {
                 onMenuTap: onMenuTap,
                 onNotificationTap: onNotificationTap,
                 onLocationTap: onLocationTap,
+                onResetTap: onResetTap,
                 showNotificationBadge: showNotificationBadge,
               ),
               if (showSearch)

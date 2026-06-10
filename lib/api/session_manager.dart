@@ -92,6 +92,12 @@ class SessionManager {
     await prefs.setString('bpz_city', city);
   }
 
+  Future<void> clearCity() async {
+    cityNotifier.value = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('bpz_city');
+  }
+
   // ── Restore on app launch ─────────────────────────────────────────────────
 
   Future<bool> restoreSession() async {
