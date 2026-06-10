@@ -12,6 +12,7 @@ class HeroBannerTopBar extends StatelessWidget {
 
   final VoidCallback? onMenuTap;
   final VoidCallback? onNotificationTap;
+  final VoidCallback? onLocationTap;
   final bool showNotificationBadge;
 
   const HeroBannerTopBar({
@@ -20,6 +21,7 @@ class HeroBannerTopBar extends StatelessWidget {
     this.address = 'Ramakrishna Nagar, Palanigoundan pudur...',
     this.onMenuTap,
     this.onNotificationTap,
+    this.onLocationTap,
     this.showNotificationBadge = false,
   });
 
@@ -41,44 +43,54 @@ class HeroBannerTopBar extends StatelessWidget {
 
             // ── Location block ──
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(
-                        Icons.location_on_outlined,
-                        color: AppColors.limeGreen,
-                        size: 14,
-                      ),
-                      const SizedBox(width: 4),
-                      Flexible(
-                        child: Text(
-                          city,
-                          style: const TextStyle(
-                            fontFamily: 'Jost',
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.limeGreen,
-                          ),
-                          overflow: TextOverflow.ellipsis,
+              child: GestureDetector(
+                onTap: onLocationTap,
+                behavior: HitTestBehavior.opaque,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_on_outlined,
+                          color: AppColors.limeGreen,
+                          size: 14,
                         ),
-                      ),
-                    ],
-                  ),
-                  Text(
-                    address,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      color: AppColors.white,
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(
+                            city,
+                            style: const TextStyle(
+                              fontFamily: 'Jost',
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.limeGreen,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: AppColors.limeGreen,
+                          size: 16,
+                        ),
+                      ],
                     ),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
-                  ),
-                ],
+                    Text(
+                      address,
+                      style: const TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 11,
+                        color: AppColors.white,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(width: 10),

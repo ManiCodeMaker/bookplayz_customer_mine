@@ -4,6 +4,7 @@ import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
+import 'package:bookplayz/widgets/empty_venue_state.dart';
 import 'package:bookplayz/widgets/venue_cards.dart';
 import 'package:flutter/material.dart';
 
@@ -142,29 +143,34 @@ class VenuesScreenState extends State<VenuesScreen> {
       _error = null;
     });
 
+    final effectiveCity = city ?? _selectedCity ?? SessionManager.instance.city;
     final lat = SessionManager.instance.latitude;
     final lng = SessionManager.instance.longitude;
 
-    print('DEBUG lat: $lat, lng: $lng'); // add this
-    print('DEBUG city: ${city ?? _selectedCity ?? SessionManager.instance.city}');
-
-    if (lat == null || lng == null) {
-      setState(() {
-        _loading = false;
-        _error = 'Location unavailable';
-      });
-      return;
-    }
-
     try {
-      final result = await VenueApi.search(
-        latitude: lat,
-        longitude: lng,
-        page: 1,
-        limit: 12,
-        city: city ?? _selectedCity,
-      );
-      print('DEBUG first venue distance: ${result.venues.first.distance}');
+      final VenueSearchResult result;
+      if (lat != null && lng != null) {
+        result = await VenueApi.search(
+          latitude: lat,
+          longitude: lng,
+          page: 1,
+          limit: 12,
+          city: effectiveCity,
+        );
+      } else if (effectiveCity != null) {
+        result = await VenueApi.searchByCity(
+          city: effectiveCity,
+          page: 1,
+          limit: 12,
+        );
+      } else {
+        setState(() {
+          _loading = false;
+          _error = 'Please select a city to see venues';
+        });
+        return;
+      }
+
       setState(() {
         _allVenues = result.venues;
         _currentPage = 1;
@@ -476,13 +482,8 @@ Stack(
                       ),
                     )
                   : _filtered.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No venues found',
-                            style: TextStyle(
-                                color:
-                                    AppColors.white.withValues(alpha: 0.5)),
-                          ),
+                      ? EmptyVenueState(
+                          city: _selectedCity ?? SessionManager.instance.city,
                         )
                       : ListView.builder(
                           controller: _scrollCtrl,

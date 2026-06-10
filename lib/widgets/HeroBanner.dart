@@ -39,6 +39,7 @@ class HeroBanner extends StatelessWidget {
   final String address;
   final VoidCallback? onMenuTap;
   final VoidCallback? onNotificationTap;
+  final VoidCallback? onLocationTap;
   final bool showNotificationBadge;
 
   // ── Search bar ──
@@ -73,6 +74,7 @@ class HeroBanner extends StatelessWidget {
     this.address = 'Ramakrishna Nagar, Palanigoundan pudur...',
     this.onMenuTap,
     this.onNotificationTap,
+    this.onLocationTap,
     this.showNotificationBadge = false,
     // search
     this.showSearch = false,
@@ -124,6 +126,7 @@ class HeroBanner extends StatelessWidget {
                 address: address,
                 onMenuTap: onMenuTap,
                 onNotificationTap: onNotificationTap,
+                onLocationTap: onLocationTap,
                 showNotificationBadge: showNotificationBadge,
               ),
               if (showSearch)

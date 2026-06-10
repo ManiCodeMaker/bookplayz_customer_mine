@@ -31,11 +31,18 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
 
   static const _kFallbackLatLng = LatLng(20.5937, 78.9629);
 
+  // City passed from _MapBanner (or null when opened via GPS flow).
+  String? _cityArg;
+
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    _loadVenues();
+    // city arg is read after first frame so route arguments are available.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cityArg = ModalRoute.of(context)?.settings.arguments as String?;
+      _loadVenues();
+    });
   }
 
   @override
@@ -51,25 +58,32 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
   Future<void> _loadVenues() async {
     final lat = SessionManager.instance.latitude;
     final lng = SessionManager.instance.longitude;
-
-    if (lat == null || lng == null) {
-      if (mounted) {
-        setState(() {
-          _error = 'Location not available. Please enable location access and try again.';
-          _loading = false;
-        });
-      }
-      return;
-    }
+    // _cityArg is an explicit user selection — always use city-only search so
+    // the map shows venues in the chosen city, not venues near the GPS position.
+    final city = _cityArg ?? SessionManager.instance.city;
 
     try {
-      final result = await VenueApi.search(
-        latitude: lat,
-        longitude: lng,
-        radius: 20,
-        limit: 50,
-        page: 1,
-      );
+      final VenueSearchResult result;
+      if (city != null) {
+        result = await VenueApi.searchByCity(city: city, limit: 50);
+      } else if (lat != null && lng != null) {
+        result = await VenueApi.search(
+          latitude: lat,
+          longitude: lng,
+          radius: 20,
+          limit: 50,
+          page: 1,
+        );
+      } else {
+        if (mounted) {
+          setState(() {
+            _error = 'Select a city to explore venues on the map.';
+            _loading = false;
+          });
+        }
+        return;
+      }
+
       final withCoords = result.venues
           .where((v) => v.latitude != null && v.longitude != null)
           .toList();
@@ -82,6 +96,8 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
         _loading = false;
       });
       await _rebuildMarkers();
+      // Fit bounds after markers are built. If the map controller isn't ready
+      // yet, onMapCreated will call _fitMapBounds when the map renders.
       _fitMapBounds();
     } catch (_) {
       if (!mounted) return;
@@ -305,8 +321,15 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final lat = SessionManager.instance.latitude ?? _kFallbackLatLng.latitude;
-    final lng = SessionManager.instance.longitude ?? _kFallbackLatLng.longitude;
+    // When a city is explicitly selected, start at India centre and let
+    // _fitMapBounds() zoom to the city once venues load.
+    final city = _cityArg ?? SessionManager.instance.city;
+    final initialTarget = (city == null)
+        ? LatLng(
+            SessionManager.instance.latitude ?? _kFallbackLatLng.latitude,
+            SessionManager.instance.longitude ?? _kFallbackLatLng.longitude,
+          )
+        : _kFallbackLatLng;
 
     return Scaffold(
       body: Stack(
@@ -320,8 +343,8 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
             compassEnabled: false,
             markers: _markers,
             initialCameraPosition: CameraPosition(
-              target: LatLng(lat, lng),
-              zoom: 12,
+              target: initialTarget,
+              zoom: city != null ? 10 : 12,
             ),
             onMapCreated: (c) {
               _mapController = c;
@@ -360,11 +383,13 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
                           ),
                         ),
                       ),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Nearby Venues',
+                          _cityArg != null
+                              ? 'Venues in $_cityArg'
+                              : 'Nearby Venues',
                           textAlign: TextAlign.center,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontFamily: 'Jost',
                             fontSize: 17,
                             fontWeight: FontWeight.w700,

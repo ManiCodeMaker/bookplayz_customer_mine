@@ -4,6 +4,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/promo_banner_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
+import 'package:bookplayz/widgets/empty_venue_state.dart';
 import 'package:bookplayz/widgets/invite_friend_banner.dart';
 import 'package:bookplayz/widgets/review_carousel.dart';
 import 'package:bookplayz/widgets/venue_cards.dart';
@@ -124,31 +125,42 @@ Future<void> _toggleFavorite(int venueId) async {
       statusBarIconBrightness: Brightness.light,
     ));
     _loadVenues();
-  
+    SessionManager.instance.cityNotifier.addListener(_onCityChanged);
   }
+
+  void _onCityChanged() => _loadVenues();
+
   Future<void> _loadVenues() async {
     final lat = SessionManager.instance.latitude;
     final lng = SessionManager.instance.longitude;
-
-    if (lat == null || lng == null) {
-      setState(() {
-        _venuesLoading = false;
-        _venuesError = 'Location unavailable';
-      });
-      return;
-    }
+    final city = SessionManager.instance.city;
 
     try {
-      final result = await VenueApi.search(
-        latitude: lat,
-        longitude: lng,
-        limit: 4, // only 4 on home screen
-      );
+      final VenueSearchResult result;
+      if (lat != null && lng != null) {
+        result = await VenueApi.search(
+          latitude: lat,
+          longitude: lng,
+          limit: 4,
+          city: city,
+        );
+      } else if (city != null) {
+        result = await VenueApi.searchByCity(city: city, limit: 4);
+      } else {
+        setState(() {
+          _venuesLoading = false;
+          _venuesError = 'Select a city to see venues near you';
+        });
+        return;
+      }
+      if (!mounted) return;
       setState(() {
         _venues = result.venues;
         _venuesLoading = false;
+        _venuesError = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _venuesLoading = false;
         _venuesError = e.toString();
@@ -158,6 +170,7 @@ Future<void> _toggleFavorite(int venueId) async {
 
   @override
   void dispose() {
+    SessionManager.instance.cityNotifier.removeListener(_onCityChanged);
     _scrollController.dispose();
     super.dispose();
   }
@@ -267,14 +280,16 @@ Future<void> _toggleFavorite(int venueId) async {
                     // ── Venue cards list ──
           if (_venuesLoading)
             const SliverToBoxAdapter(
-              child: const Center(child: AppLoader()),
+              child: Center(child: AppLoader()),
             )
           else if (_venuesError != null)
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Text(_venuesError!,
-                    style: TextStyle(color: AppColors.white.withValues(alpha: 0.5))),
+              child: EmptyVenueState(message: _venuesError!),
+            )
+          else if (_venues.isEmpty)
+            SliverToBoxAdapter(
+              child: EmptyVenueState(
+                city: SessionManager.instance.city,
               ),
             )
           else
@@ -744,7 +759,11 @@ class _MapBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.pushNamed(context, AppRoutes.venueMap),
+      onTap: () => Navigator.pushNamed(
+        context,
+        AppRoutes.venueMap,
+        arguments: SessionManager.instance.city,
+      ),
       child: Stack(
         clipBehavior: Clip.none,
         children: [

@@ -10,14 +10,13 @@ class SessionManager {
   SessionManager._();
   static final SessionManager instance = SessionManager._();
   final ValueNotifier<Set<int>> favoriteIds = ValueNotifier<Set<int>>({});
-
+  final ValueNotifier<String?> cityNotifier = ValueNotifier<String?>(null);
 
   SessionUser? _user;
   String?      _accessToken;
   String?      _refreshToken;
   double?      _latitude;
   double?      _longitude;
-  String? _city;
 
   SessionUser? get currentUser    => _user;
   set user(SessionUser? u)        => _user = u;
@@ -25,7 +24,7 @@ class SessionManager {
   bool         get isLoggedIn     => _accessToken != null && _user != null;
   double?      get latitude       => _latitude;
   double?      get longitude      => _longitude;
-  String?      get city           => _city;
+  String?      get city           => cityNotifier.value;
 
 
   // ── Location ──────────────────────────────────────────────────────────────
@@ -34,7 +33,7 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     _latitude  = prefs.getDouble('bpz_lat');
     _longitude = prefs.getDouble('bpz_lng');
-    _city      = prefs.getString('bpz_city');
+    cityNotifier.value = prefs.getString('bpz_city');
   }
 
   Future<void> fetchAndStoreLocation() async {
@@ -88,10 +87,10 @@ class SessionManager {
   }
 
   Future<void> saveCity(String city) async {
-    _city = city;
+    cityNotifier.value = city;
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('bpz_city', city);
-}
+  }
 
   // ── Restore on app launch ─────────────────────────────────────────────────
 

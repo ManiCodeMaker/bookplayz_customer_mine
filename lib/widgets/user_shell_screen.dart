@@ -1,5 +1,6 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/screens/home/user_home_screen.dart';
+import 'package:bookplayz/widgets/city_picker_sheet.dart';
 import 'package:bookplayz/screens/my-booking/my_booking_screen.dart';
 import 'package:bookplayz/screens/profile/profile_screen.dart';
 import 'package:bookplayz/screens/venues/venues.dart';
@@ -43,6 +44,13 @@ class _UserShellScreenState extends State<UserShellScreen>
   void _openDrawer() {
     setState(() => _drawerOpen = true);
     _drawerAnim.forward();
+  }
+
+  Future<void> _openCityPicker() async {
+    final city = await showCityPickerSheet(context);
+    if (city == null || !mounted) return;
+    // Refresh both home and venues with the new city
+    _venuesKey.currentState?.refresh();
   }
 
   void _closeDrawer() {
@@ -165,16 +173,22 @@ class _UserShellScreenState extends State<UserShellScreen>
           backgroundColor: AppColors.navyBlue,
           body: Column(
             children: [
-              ValueListenableBuilder<double>(
-                valueListenable: _scrollProgress,
-                builder: (_, progress, _) => HeroBanner(
-                  scrollProgress: _navIndex == 0 ? progress : 0.0,
-                  showCarousel: _navIndex == 0,
-                  controller: _navIndex == 0 ? _heroController : null,
-                  showSearch: _navIndex == 0,
-                  onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
-                  showNotificationBadge: false,
-                  onMenuTap: _openDrawer,
+              ValueListenableBuilder<String?>(
+                valueListenable: SessionManager.instance.cityNotifier,
+                builder: (_, city, _) => ValueListenableBuilder<double>(
+                  valueListenable: _scrollProgress,
+                  builder: (_, progress, _) => HeroBanner(
+                    scrollProgress: _navIndex == 0 ? progress : 0.0,
+                    showCarousel: _navIndex == 0,
+                    controller: _navIndex == 0 ? _heroController : null,
+                    showSearch: _navIndex == 0,
+                    onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
+                    showNotificationBadge: false,
+                    onMenuTap: _openDrawer,
+                    onLocationTap: _openCityPicker,
+                    city: city ?? 'Select City',
+                    address: city != null ? 'Tap to change location' : 'Search for your city',
+                  ),
                 ),
               ),
               Expanded(

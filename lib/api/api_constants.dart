@@ -12,6 +12,48 @@ class ApiConstants {
   static const String baseUrl = 'https://api.bookplayz.com/api';
 }
 
+const _base = ApiConstants.baseUrl;
+
+// ── Location models ───────────────────────────────────────────────────────────
+
+class StateModel {
+  final int id;
+  final String name;
+  const StateModel({required this.id, required this.name});
+  factory StateModel.fromJson(Map<String, dynamic> j) =>
+      StateModel(id: j['id'] as int, name: j['name'] as String);
+}
+
+class DistrictModel {
+  final int id;
+  final String name;
+  const DistrictModel({required this.id, required this.name});
+  factory DistrictModel.fromJson(Map<String, dynamic> j) =>
+      DistrictModel(id: j['id'] as int, name: j['name'] as String);
+}
+
+// ── Locations ─────────────────────────────────────────────────────────────────
+class LocationsApi {
+  LocationsApi._();
+  static const String states = '$_base/locations/states';
+
+  /// [limit] defaults to 500 — enough for any Indian state's districts.
+  static String districts(int stateId, {int limit = 500}) =>
+      '$_base/locations/districts?stateId=$stateId&limit=$limit';
+
+  static Future<List<StateModel>> fetchStates() async {
+    final res = await ApiService.instance.get(states);
+    final list = res['data'] as List<dynamic>;
+    return list.map((e) => StateModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+
+  static Future<List<DistrictModel>> fetchDistricts(int stateId) async {
+    final res = await ApiService.instance.get(districts(stateId));
+    final list = res['data'] as List<dynamic>;
+    return list.map((e) => DistrictModel.fromJson(e as Map<String, dynamic>)).toList();
+  }
+}
+
 // ── Auth ──────────────────────────────────────────────────────────────────────
 class AuthApi {
   AuthApi._();
@@ -66,6 +108,23 @@ class VenueApi {
       '${ApiConstants.baseUrl}/venues/cities?q=$q',
     );
     return (res['data'] as List<dynamic>).map((e) => e as String).toList();
+  }
+
+  static Future<VenueSearchResult> searchByCity({
+    required String city,
+    int page = 1,
+    int limit = 12,
+  }) async {
+    final url = '${ApiConstants.baseUrl}/venues/search'
+        '?page=$page&limit=$limit&city=$city';
+    final res = await ApiService.instance.get(url);
+    final data = res['data'] as Map<String, dynamic>;
+    final list = (data['data'] as List<dynamic>)
+        .map((e) => VenueModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final pagination =
+        VenuePagination.fromJson(data['pagination'] as Map<String, dynamic>);
+    return VenueSearchResult(venues: list, pagination: pagination);
   }
 
   static Future<VenueSearchResult> search({
