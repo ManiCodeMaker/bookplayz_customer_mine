@@ -127,6 +127,20 @@ class VenueApi {
     return VenueSearchResult(venues: list, pagination: pagination);
   }
 
+  /// Fetches all venues — used by the map screen so every pin is visible
+  /// regardless of where the user pans. No location filter is applied.
+  static Future<VenueSearchResult> fetchAll({int limit = 100}) async {
+    final url = '${ApiConstants.baseUrl}/venues/search?page=1&limit=$limit';
+    final res = await ApiService.instance.get(url);
+    final data = res['data'] as Map<String, dynamic>;
+    final list = (data['data'] as List<dynamic>)
+        .map((e) => VenueModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final pagination =
+        VenuePagination.fromJson(data['pagination'] as Map<String, dynamic>);
+    return VenueSearchResult(venues: list, pagination: pagination);
+  }
+
   static Future<VenueSearchResult> search({
     required double latitude,
     required double longitude,

@@ -60,33 +60,10 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
   // ── Data ───────────────────────────────────────────────────────────────────
 
   Future<void> _loadVenues() async {
-    final lat = SessionManager.instance.latitude;
-    final lng = SessionManager.instance.longitude;
-    // _cityArg is an explicit user selection — always use city-only search so
-    // the map shows venues in the chosen city, not venues near the GPS position.
-    final city = _cityArg ?? SessionManager.instance.city;
-
+    // Load ALL venues so every pin is visible as the user pans freely.
+    // City / GPS only controls where the camera starts.
     try {
-      final VenueSearchResult result;
-      if (city != null) {
-        result = await VenueApi.searchByCity(city: city, limit: 50);
-      } else if (lat != null && lng != null) {
-        result = await VenueApi.search(
-          latitude: lat,
-          longitude: lng,
-          radius: 20,
-          limit: 50,
-          page: 1,
-        );
-      } else {
-        if (mounted) {
-          setState(() {
-            _error = 'Select a city to explore venues on the map.';
-            _loading = false;
-          });
-        }
-        return;
-      }
+      final result = await VenueApi.fetchAll();
 
       final withCoords = result.venues
           .where((v) => v.latitude != null && v.longitude != null)
@@ -101,12 +78,9 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
       });
       await _rebuildMarkers();
 
-      if (withCoords.isNotEmpty) {
-        // Venues have coordinates — zoom to their bounding box.
-        // onMapCreated also calls this in case map wasn't ready yet.
-        _fitMapBounds();
-      } else if (city != null) {
-        // No venue pins yet — geocode the city name and centre the map there.
+      // ── Camera: geocode selected city → GPS → fit all pins ──
+      final city = _cityArg ?? SessionManager.instance.city;
+      if (city != null) {
         final pos = await _geocodeCity(city);
         if (!mounted) return;
         if (pos != null) {
@@ -116,12 +90,24 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
               CameraPosition(target: pos, zoom: 12),
             ),
           );
+          return;
         }
       }
-    } catch (_) {
+      final lat = SessionManager.instance.latitude;
+      final lng = SessionManager.instance.longitude;
+      if (lat != null && lng != null) {
+        _mapController?.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: LatLng(lat, lng), zoom: 12),
+          ),
+        );
+      } else if (withCoords.isNotEmpty) {
+        _fitMapBounds();
+      }
+    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'Failed to load venues. Please try again.';
+        _error = e.toString();
         _loading = false;
       });
     }
@@ -364,15 +350,12 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // When a city is explicitly selected, start at India centre and let
-    // _fitMapBounds() zoom to the city once venues load.
-    final city = _cityArg ?? SessionManager.instance.city;
-    final initialTarget = (city == null)
-        ? LatLng(
-            SessionManager.instance.latitude ?? _kFallbackLatLng.latitude,
-            SessionManager.instance.longitude ?? _kFallbackLatLng.longitude,
-          )
-        : _kFallbackLatLng;
+    // Start at GPS location if available, otherwise India centre.
+    // _loadVenues will animateCamera to the selected city once venues load.
+    final initialTarget = LatLng(
+      SessionManager.instance.latitude ?? _kFallbackLatLng.latitude,
+      SessionManager.instance.longitude ?? _kFallbackLatLng.longitude,
+    );
 
     return Scaffold(
       body: Stack(
@@ -387,7 +370,7 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
             markers: _markers,
             initialCameraPosition: CameraPosition(
               target: initialTarget,
-              zoom: city != null ? 10 : 12,
+              zoom: 12,
             ),
             onMapCreated: (c) {
               _mapController = c;
