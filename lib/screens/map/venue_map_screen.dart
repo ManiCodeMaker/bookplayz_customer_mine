@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui' as ui;
 
 import 'package:http/http.dart' as http;
@@ -33,6 +34,9 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
 
   // City passed from _MapBanner (or null when opened via GPS flow).
   String? _cityArg;
+  // Geocoded centre of _cityArg — used to position the map when no venue
+  // pins are available (venues exist but have no lat/lng yet).
+  LatLng? _cityCenter;
 
   @override
   void initState() {
@@ -96,9 +100,24 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
         _loading = false;
       });
       await _rebuildMarkers();
-      // Fit bounds after markers are built. If the map controller isn't ready
-      // yet, onMapCreated will call _fitMapBounds when the map renders.
-      _fitMapBounds();
+
+      if (withCoords.isNotEmpty) {
+        // Venues have coordinates — zoom to their bounding box.
+        // onMapCreated also calls this in case map wasn't ready yet.
+        _fitMapBounds();
+      } else if (city != null) {
+        // No venue pins yet — geocode the city name and centre the map there.
+        final pos = await _geocodeCity(city);
+        if (!mounted) return;
+        if (pos != null) {
+          setState(() => _cityCenter = pos);
+          _mapController?.animateCamera(
+            CameraUpdate.newCameraPosition(
+              CameraPosition(target: pos, zoom: 12),
+            ),
+          );
+        }
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -106,6 +125,30 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// Geocodes [city] using Nominatim (OSM) — no API key required.
+  Future<LatLng?> _geocodeCity(String city) async {
+    try {
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/search'
+        '?q=${Uri.encodeComponent('$city, India')}'
+        '&format=json&limit=1',
+      );
+      final response = await http.get(
+        uri,
+        headers: {'User-Agent': 'bookplayz-app/1.0'},
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+        if (data.isNotEmpty) {
+          final lat = double.tryParse(data[0]['lat'] as String);
+          final lon = double.tryParse(data[0]['lon'] as String);
+          if (lat != null && lon != null) return LatLng(lat, lon);
+        }
+      }
+    } catch (_) {}
+    return null;
   }
 
   void _onSearchChanged() {
@@ -348,7 +391,15 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
             ),
             onMapCreated: (c) {
               _mapController = c;
-              if (_filtered.isNotEmpty) _fitMapBounds();
+              if (_filtered.isNotEmpty) {
+                _fitMapBounds();
+              } else if (_cityCenter != null) {
+                c.animateCamera(
+                  CameraUpdate.newCameraPosition(
+                    CameraPosition(target: _cityCenter!, zoom: 12),
+                  ),
+                );
+              }
             },
             onTap: (_) {
               setState(() => _selectedIndex = -1);
