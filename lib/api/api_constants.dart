@@ -63,7 +63,10 @@ class AuthApi {
   static const String refreshTokenUrl = '${ApiConstants.baseUrl}/auth/refresh-token';
 
   static Future<Map<String, dynamic>> requestOtp(String mobile) async {
-    final res = await ApiService.instance.post(requestOtpUrl, {'mobile': mobile});
+    final res = await ApiService.instance.post(requestOtpUrl, {
+      'mobile': mobile,
+      'loginAs': 'user',
+    });
     return res['data'] as Map<String, dynamic>;
   }
 
@@ -71,7 +74,11 @@ class AuthApi {
     required String mobile,
     required String otp,
   }) async {
-    final res = await ApiService.instance.post(verifyOtpUrl, {'mobile': mobile, 'otp': otp});
+    final res = await ApiService.instance.post(verifyOtpUrl, {
+      'mobile': mobile,
+      'otp': otp,
+      'loginAs': 'user',
+    });
     return res['data'] as Map<String, dynamic>;
   }
 }
@@ -416,4 +423,75 @@ class ReviewApi {
 class BookingDetailApi {
   BookingDetailApi._();
   static String byId(int id) => '${ApiConstants.baseUrl}/bookings/$id';
+}
+
+// ── Cancellation ───────────────────────────────────────────────────────────────
+class CancellationApi {
+  CancellationApi._();
+  static String preview(int id) => '${ApiConstants.baseUrl}/bookings/$id/cancellation-preview';
+  static String cancel(int id)  => '${ApiConstants.baseUrl}/bookings/$id/cancel';
+}
+
+// ── Notifications ──────────────────────────────────────────────────────────────
+class NotificationModel {
+  final int id;
+  final String category;
+  final String type;
+  final String title;
+  final String message;
+  final Map<String, dynamic> data;
+  final bool isRead;
+  final DateTime createdAt;
+
+  const NotificationModel({
+    required this.id,
+    required this.category,
+    required this.type,
+    required this.title,
+    required this.message,
+    required this.data,
+    required this.isRead,
+    required this.createdAt,
+  });
+
+  factory NotificationModel.fromJson(Map<String, dynamic> j) {
+    return NotificationModel(
+      id:        j['id'] as int,
+      category:  j['category'] as String? ?? '',
+      type:      j['type'] as String? ?? '',
+      title:     j['title'] as String? ?? '',
+      message:   j['message'] as String? ?? '',
+      data:      (j['data'] as Map<String, dynamic>?) ?? {},
+      isRead:    j['isRead'] as bool? ?? false,
+      createdAt: DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
+    );
+  }
+}
+
+class NotificationsApi {
+  NotificationsApi._();
+
+  static const String _unreadCountUrl = '${ApiConstants.baseUrl}/notifications/unread-count';
+  static const String _readAllUrl     = '${ApiConstants.baseUrl}/notifications/read-all';
+  static String list({int limit = 10}) =>
+      '${ApiConstants.baseUrl}/notifications?limit=$limit';
+
+  static Future<int> fetchUnreadCount() async {
+    final res = await ApiService.instance.get(_unreadCountUrl);
+    final data = res['data'] as Map<String, dynamic>?;
+    return (data?['count'] as num?)?.toInt() ?? 0;
+  }
+
+  static Future<List<NotificationModel>> fetchList({int limit = 10}) async {
+    final res = await ApiService.instance.get(list(limit: limit));
+    final data = res['data'] as Map<String, dynamic>;
+    final items = data['data'] as List<dynamic>;
+    return items
+        .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> markAllRead() async {
+    await ApiService.instance.put(_readAllUrl, {});
+  }
 }

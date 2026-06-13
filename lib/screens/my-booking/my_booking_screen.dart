@@ -6,6 +6,7 @@ import 'package:bookplayz/screens/my-booking/write_review.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
+import 'package:bookplayz/widgets/cancellation_sheet.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -263,8 +264,10 @@ class _BookingHomeState extends State<_BookingHome> {
                                   itemCount: _currentList.length,
                                   separatorBuilder: (_, _) =>
                                       const SizedBox(height: 16),
-                                  itemBuilder: (_, i) =>
-                                      _BookingCard(booking: _currentList[i]),
+                                  itemBuilder: (_, i) => _BookingCard(
+                                    booking: _currentList[i],
+                                    onCancelled: widget.onRefresh,
+                                  ),
                                 ),
                     ),
                   ),
@@ -377,7 +380,9 @@ class _BookingToggle3Switch extends StatelessWidget {
 // ─────────────────────────────────────────────────────────
 class _BookingCard extends StatefulWidget {
   final MyBookingModel booking;
-  const _BookingCard({required this.booking});
+  final Future<void> Function()? onCancelled;
+
+  const _BookingCard({required this.booking, this.onCancelled});
 
   @override
   State<_BookingCard> createState() => _BookingCardState();
@@ -385,11 +390,21 @@ class _BookingCard extends StatefulWidget {
 
 class _BookingCardState extends State<_BookingCard> {
   int? _reviewId;
+  bool _isCancelling = false;
 
   @override
   void initState() {
     super.initState();
     _reviewId = widget.booking.reviewId;
+  }
+
+  Future<void> _showCancelSheet() async {
+    await showCancellationSheet(
+      context: context,
+      bookingId: widget.booking.id,
+      onCancelled: () => widget.onCancelled?.call(),
+      setLoading: (v) { if (mounted) setState(() => _isCancelling = v); },
+    );
   }
 
   void _openDetails(BuildContext context) {
@@ -589,9 +604,10 @@ class _BookingCardState extends State<_BookingCard> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: _ActionButton(
-                            label:     'Cancel',
+                            label:     _isCancelling ? '...' : 'Cancel',
                             color:     const Color(0xFFFF5252),
                             textColor: Colors.white,
+                            onTap:     _isCancelling ? null : _showCancelSheet,
                           ),
                         ),
                       ],

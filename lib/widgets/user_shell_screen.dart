@@ -1,6 +1,8 @@
+import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/screens/home/user_home_screen.dart';
 import 'package:bookplayz/widgets/city_picker_sheet.dart';
+import 'package:bookplayz/widgets/notification_sheet.dart';
 import 'package:bookplayz/screens/my-booking/my_booking_screen.dart';
 import 'package:bookplayz/screens/profile/profile_screen.dart';
 import 'package:bookplayz/screens/venues/venues.dart';
@@ -37,9 +39,23 @@ class _UserShellScreenState extends State<UserShellScreen>
 
   bool _drawerOpen = false;
   bool _profileInSubRoute = false;
+  int _unreadCount = 0;
+  Timer? _notifTimer;
   late AnimationController _drawerAnim;
   late Animation<Offset> _drawerSlide;
   late Animation<double> _drawerFade;
+
+  Future<void> _fetchUnreadCount() async {
+    try {
+      final count = await NotificationsApi.fetchUnreadCount();
+      if (mounted) setState(() => _unreadCount = count);
+    } catch (_) {}
+  }
+
+  Future<void> _onNotificationTap() async {
+    await showNotificationSheet(context);
+    if (mounted) setState(() => _unreadCount = 0);
+  }
 
   void _openDrawer() {
     setState(() => _drawerOpen = true);
@@ -158,6 +174,11 @@ class _UserShellScreenState extends State<UserShellScreen>
     );
 
     UserShellScreen.onNavigateToMyBookings = () => _onNavTap(2);
+    _fetchUnreadCount();
+    _notifTimer = Timer.periodic(
+      const Duration(minutes: 2),
+      (_) => _fetchUnreadCount(),
+    );
 
     _screens = [
       UserHomeScreen(
@@ -179,6 +200,7 @@ class _UserShellScreenState extends State<UserShellScreen>
 
   @override
   void dispose() {
+    _notifTimer?.cancel();
     _scrollProgress.dispose();
     _heroController.dispose();
     _drawerAnim.dispose();
@@ -203,7 +225,8 @@ class _UserShellScreenState extends State<UserShellScreen>
                     controller: _navIndex == 0 ? _heroController : null,
                     showSearch: _navIndex == 0,
                     onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
-                    showNotificationBadge: false,
+                    showNotificationBadge: _unreadCount > 0,
+                    onNotificationTap: _onNotificationTap,
                     onMenuTap: _openDrawer,
                     onLocationTap: _openCityPicker,
                     onResetTap: city != null ? _resetToGps : null,

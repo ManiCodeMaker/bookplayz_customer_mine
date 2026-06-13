@@ -6,6 +6,7 @@
   import '../../theme/app_constants.dart';
   import 'package:flutter_svg/flutter_svg.dart';
   import '../../api/api_constants.dart';
+  import '../../api/api_service.dart';
   import '../../widgets/app_loader.dart';
   import '../../widgets/app_snackbar.dart';
 
@@ -60,7 +61,7 @@
         );
       } catch (e) {
         if (!mounted) return;
-        AppSnackbar.showError(context, e.toString());
+        AppSnackbar.showError(context, e is ApiException ? e.message : 'Failed to send OTP. Please try again.');
       } finally {
         if (mounted) setState(() => _loading = false);
       }

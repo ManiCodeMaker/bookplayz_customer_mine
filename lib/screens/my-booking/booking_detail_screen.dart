@@ -2,6 +2,7 @@ import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
+import 'package:bookplayz/widgets/cancellation_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
@@ -29,6 +30,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   Map<String, dynamic>? _data;
   bool _loading = true;
   String? _error;
+  bool _isCancelling = false;
 
   // ── Data accessors ──────────────────────────────────────────────────────────
 
@@ -145,6 +147,39 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       }
     } catch (e) {
       if (mounted) setState(() { _loading = false; _error = e.toString(); });
+    }
+  }
+
+  Future<void> _showCancelSheet() async {
+    setState(() => _isCancelling = true);
+    try {
+      final res = await ApiService.instance.get(
+        CancellationApi.preview(widget.bookingId),
+      );
+      final preview = res['data'] as Map<String, dynamic>;
+      if (!mounted) return;
+      await showModalBottomSheet<void>(
+        context: context,
+        isScrollControlled: true,
+        useRootNavigator: true,
+        backgroundColor: Colors.white,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        builder: (_) => CancellationSheet(
+          preview: preview,
+          bookingId: widget.bookingId,
+          onCancelled: _fetch,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isCancelling = false);
     }
   }
 
@@ -358,7 +393,45 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
         // Get Directions button
         if (hasLocation) _buildDirectionsButton(),
+
+        // Cancel button — only for confirmed bookings
+        if (_s('status') == 'confirmed') _buildCancelButton(),
       ],
+    );
+  }
+
+  Widget _buildCancelButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: OutlinedButton(
+          onPressed: _isCancelling ? null : _showCancelSheet,
+          style: OutlinedButton.styleFrom(
+            side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          child: _isCancelling
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: Color(0xFFEF4444),
+                  ),
+                )
+              : const Text(
+                  'Cancel Booking',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Color(0xFFEF4444),
+                  ),
+                ),
+        ),
+      ),
     );
   }
 
