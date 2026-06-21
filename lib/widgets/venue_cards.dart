@@ -4,6 +4,39 @@ import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+class _VenueNoImagePlaceholder extends StatelessWidget {
+  const _VenueNoImagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      color: AppColors.navyBlue.withValues(alpha: 0.08),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported_outlined,
+            size: 36,
+            color: AppColors.navyBlue.withValues(alpha: 0.35),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'No Image',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: AppColors.navyBlue.withValues(alpha: 0.35),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class VenueCard extends StatelessWidget {
   final VenueModel venue;
   final bool isFavorite;
@@ -46,16 +79,15 @@ class VenueCard extends StatelessWidget {
               children: [
                 AspectRatio(
                   aspectRatio: 16 / 9,
-                  child: venue.primaryImage != null
+                  child: venue.primaryImage != null &&
+                          venue.primaryImage!.isNotEmpty
                       ? Image.network(
                           venue.primaryImage!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(Icons.broken_image_rounded),
-                          ),
+                          errorBuilder: (_, __, ___) =>
+                              const _VenueNoImagePlaceholder(),
                         )
-                      : Container(color: Colors.grey.shade200),
+                      : const _VenueNoImagePlaceholder(),
                 ),
 
                 // Category icons bottom-left
