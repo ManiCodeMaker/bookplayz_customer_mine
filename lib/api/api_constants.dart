@@ -73,12 +73,15 @@ class AuthApi {
   static Future<Map<String, dynamic>> verifyOtp({
     required String mobile,
     required String otp,
+    String? deviceToken,
   }) async {
-    final res = await ApiService.instance.post(verifyOtpUrl, {
+    final body = <String, dynamic>{
       'mobile': mobile,
       'otp': otp,
       'loginAs': 'user',
-    });
+    };
+    if (deviceToken != null) body['deviceToken'] = deviceToken;
+    final res = await ApiService.instance.post(verifyOtpUrl, body);
     return res['data'] as Map<String, dynamic>;
   }
 }

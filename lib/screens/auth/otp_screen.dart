@@ -1,3 +1,4 @@
+import 'package:bookplayz/services/fcm_service.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
 import 'package:flutter/material.dart';
@@ -123,9 +124,11 @@ class _OtpScreenState extends State<OTPScreen>
 
     setState(() => _loading = true);
     try {
+      final deviceToken = await FcmService.instance.getToken();
       final data = await AuthApi.verifyOtp(
         mobile: _phoneNumber,
         otp: otp,
+        deviceToken: deviceToken,
       );
 
       // Save session

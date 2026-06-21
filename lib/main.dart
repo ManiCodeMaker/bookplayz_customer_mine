@@ -1,5 +1,7 @@
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/session_manager.dart';
+import 'package:bookplayz/services/fcm_service.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:bookplayz/screens/auth/otp_screen.dart';
 import 'package:bookplayz/screens/auth/signin_screen.dart';
 import 'package:bookplayz/screens/auth/signup_screen.dart';
@@ -32,6 +34,8 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  await Firebase.initializeApp();
+  await FcmService.instance.init();
   await SessionManager.instance.restoreLocation();
   await SessionManager.instance.restoreSession();
   if (SessionManager.instance.isLoggedIn) {

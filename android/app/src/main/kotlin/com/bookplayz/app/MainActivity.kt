@@ -1,4 +1,4 @@
-package com.example.bookplayz
+package com.bookplayz.app
 
 import io.flutter.embedding.android.FlutterActivity
 
