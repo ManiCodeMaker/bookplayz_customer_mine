@@ -137,20 +137,29 @@ class UserSideDrawer extends StatelessWidget {
                             label: 'Favorites',
                             onTap: () { onClose(); onWishListTap(); },
                           ),
-                          _DrawerItem(
-                            icon: Icons.emoji_events_outlined,
-                            label: 'Upcoming Tournaments',
-                            onTap: onClose,
+                          Visibility(
+                            visible: false,
+                            child: _DrawerItem(
+                              icon: Icons.emoji_events_outlined,
+                              label: 'Upcoming Tournaments',
+                              onTap: () {},
+                            ),
                           ),
-                          _DrawerItem(
-                            icon: Icons.sports_cricket_outlined,
-                            label: 'Upcoming Games',
-                            onTap: onClose,
+                          Visibility(
+                            visible: false,
+                            child: _DrawerItem(
+                              icon: Icons.sports_cricket_outlined,
+                              label: 'Upcoming Games',
+                              onTap: () {},
+                            ),
                           ),
-                          _DrawerItem(
-                            icon: Icons.notifications_outlined,
-                            label: 'Notification',
-                            onTap: onClose,
+                          Visibility(
+                            visible: false,
+                            child: _DrawerItem(
+                              icon: Icons.notifications_outlined,
+                              label: 'Notification',
+                              onTap: () {},
+                            ),
                           ),
                      
                           _DrawerItem(

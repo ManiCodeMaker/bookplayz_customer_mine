@@ -467,18 +467,15 @@ class _BookingCardState extends State<_BookingCard> {
             ),
             child: Stack(
               children: [
-                booking.primaryVenueImage != null
+                booking.primaryVenueImage != null &&
+                        booking.primaryVenueImage!.isNotEmpty
                     ? Image.network(
                         booking.primaryVenueImage!,
                         width:  120,
                         height: double.infinity,
                         fit:    BoxFit.cover,
-                        errorBuilder: (_, _, _) => Image.asset(
-                          AppImages.venueHero,
-                          width:  120,
-                          height: double.infinity,
-                          fit:    BoxFit.cover,
-                        ),
+                        errorBuilder: (_, _, _) =>
+                            const _NoImagePlaceholder(),
                         loadingBuilder: (_, child, progress) =>
                             progress == null
                                 ? child
@@ -489,12 +486,7 @@ class _BookingCardState extends State<_BookingCard> {
                                     child: const Center(child: AppLoader(size: 60)),
                                   ),
                       )
-                    : Image.asset(
-                        AppImages.venueHero,
-                        width:  120,
-                        height: double.infinity,
-                        fit:    BoxFit.cover,
-                      ),
+                    : const _NoImagePlaceholder(),
 
                 // Status badge
                 Positioned(
@@ -728,6 +720,41 @@ class _ActionButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────
+// No Image Placeholder
+// ─────────────────────────────────────────────────────────
+class _NoImagePlaceholder extends StatelessWidget {
+  const _NoImagePlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width:  120,
+      height: double.infinity,
+      color:  AppColors.navyBlue.withValues(alpha: 0.12),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.image_not_supported_outlined,
+            size:  32,
+            color: AppColors.navyBlue.withValues(alpha: 0.45),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'No Image',
+            style: TextStyle(
+              fontSize:   10,
+              fontWeight: FontWeight.w600,
+              color:      AppColors.navyBlue.withValues(alpha: 0.45),
+            ),
+          ),
+        ],
       ),
     );
   }
