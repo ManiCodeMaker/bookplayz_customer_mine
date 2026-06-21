@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/venue_model.dart';
+import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/venue_cards.dart';
@@ -20,6 +21,8 @@ class _SearchScreenState extends State<SearchScreen> {
 
   _SearchState _state = _SearchState.idle;
   List<String> _suggestions = [];
+  List<VenueModel> _venueSuggestions = [];
+  List<VenueModel> _venueCache = [];
   List<String> _recentSearches = [];
   String? _selectedCity;
   int _currentPage = 1;
@@ -39,6 +42,14 @@ class _SearchScreenState extends State<SearchScreen> {
     _focusNode.requestFocus();
     _scrollCtrl.addListener(_onScroll);
     _searchCtrl.addListener(_onTextChanged);
+    _loadVenueCache();
+  }
+
+  Future<void> _loadVenueCache() async {
+    try {
+      final result = await VenueApi.fetchAll(limit: 100);
+      if (mounted) setState(() => _venueCache = result.venues);
+    } catch (_) {}
   }
 
   @override
@@ -64,11 +75,23 @@ class _SearchScreenState extends State<SearchScreen> {
       setState(() {
         _state = _SearchState.idle;
         _suggestions = [];
+        _venueSuggestions = [];
         _selectedCity = null;
       });
       return;
     }
-    setState(() => _state = _SearchState.suggesting);
+    // Immediately show venue matches from cache
+    final qLower = q.toLowerCase();
+    final instant = _venueCache
+        .where((v) =>
+            v.name.toLowerCase().contains(qLower) ||
+            v.city.toLowerCase().contains(qLower))
+        .take(5)
+        .toList();
+    setState(() {
+      _state = _SearchState.suggesting;
+      _venueSuggestions = instant;
+    });
     Future.delayed(const Duration(milliseconds: 350), () {
       if (_searchCtrl.text.trim() == q && q.isNotEmpty) {
         _fetchSuggestions(q);
@@ -77,15 +100,25 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Future<void> _fetchSuggestions(String q) async {
+    final qLower = q.toLowerCase();
+    final venueMatches = _venueCache
+        .where((v) =>
+            v.name.toLowerCase().contains(qLower) ||
+            v.city.toLowerCase().contains(qLower))
+        .take(5)
+        .toList();
     try {
-      final res = await VenueApi.fetchCities(q);
+      final cities = await VenueApi.fetchCities(q);
       if (mounted) {
         setState(() {
-          _suggestions = res;
+          _suggestions = cities;
+          _venueSuggestions = venueMatches;
           _state = _SearchState.suggesting;
         });
       }
-    } catch (_) {}
+    } catch (_) {
+      if (mounted) setState(() => _venueSuggestions = venueMatches);
+    }
   }
 
   Future<void> _onCitySelected(String city) async {
@@ -110,6 +143,11 @@ class _SearchScreenState extends State<SearchScreen> {
     _searchCtrl.addListener(_onTextChanged);
 
     await _fetchVenues(city: city, page: 1);
+  }
+
+  void _onVenueDirectSelect(VenueModel venue) {
+    _focusNode.unfocus();
+    Navigator.pushNamed(context, AppRoutes.venueDetail, arguments: venue.slug);
   }
 
   Future<void> _fetchVenues({required String city, int page = 1}) async {
@@ -292,7 +330,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                   fontSize: 14,
                                   color: AppColors.white),
                               decoration: InputDecoration(
-                                hintText: 'Search city...',
+                                hintText: 'Search city or venue...',
                                 hintStyle: TextStyle(
                                     fontFamily: 'Inter',
                                     fontSize: 14,
@@ -506,10 +544,10 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildSuggestions() {
-    if (_suggestions.isEmpty) {
+    if (_suggestions.isEmpty && _venueSuggestions.isEmpty) {
       return Center(
         child: Text(
-          'No cities found',
+          'No results found',
           style: TextStyle(
               fontFamily: 'Inter',
               color: AppColors.white.withValues(alpha: 0.4)),
@@ -517,48 +555,57 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
 
-    return ListView.separated(
+    return ListView(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _suggestions.length,
-      separatorBuilder: (_, __) => Divider(
-        color: AppColors.white.withValues(alpha: 0.07),
-        height: 1,
-      ),
-      itemBuilder: (_, i) {
-        final city = _suggestions[i];
-        return ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-          leading: Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: AppColors.limeGreen.withValues(alpha: 0.12),
-              shape: BoxShape.circle,
-            ),
-            child: const Icon(Icons.location_on_rounded,
-                color: AppColors.limeGreen, size: 18),
-          ),
-          title: Text(
-            city,
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 15,
-              color: AppColors.white,
+      children: [
+        // ── Cities section ──
+        if (_suggestions.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 4, 4, 8),
+            child: Text(
+              'Cities',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                color: AppColors.white.withValues(alpha: 0.4),
+              ),
             ),
           ),
-          subtitle: Text(
-            'Tamil Nadu',
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 12,
-              color: AppColors.white.withValues(alpha: 0.4),
+          ..._suggestions.map((city) => _SuggestionTile(
+                icon: Icons.location_on_rounded,
+                iconColor: AppColors.limeGreen,
+                title: city,
+                subtitle: 'City',
+                onTap: () => _onCitySelected(city),
+              )),
+        ],
+
+        // ── Venues section ──
+        if (_venueSuggestions.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
+            child: Text(
+              'Venues',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.8,
+                color: AppColors.white.withValues(alpha: 0.4),
+              ),
             ),
           ),
-          trailing: Icon(Icons.north_west_rounded,
-              color: AppColors.white.withValues(alpha: 0.3), size: 16),
-          onTap: () => _onCitySelected(city),
-        );
-      },
+          ..._venueSuggestions.map((v) => _SuggestionTile(
+                icon: Icons.stadium_outlined,
+                iconColor: const Color(0xFF7C9EF8),
+                title: v.name,
+                subtitle: v.city,
+                onTap: () => _onVenueDirectSelect(v),
+              )),
+        ],
+      ],
     );
   }
 
@@ -640,6 +687,73 @@ class _SportOption {
   final String? image;
   const _SportOption(
       {required this.categoryId, required this.name, this.image});
+}
+
+// ── Suggestion Tile ───────────────────────────────────────
+class _SuggestionTile extends StatelessWidget {
+  final IconData icon;
+  final Color iconColor;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _SuggestionTile({
+    required this.icon,
+    required this.iconColor,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: iconColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: iconColor, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 14,
+                      color: AppColors.white,
+                    ),
+                  ),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      color: AppColors.white.withValues(alpha: 0.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.north_west_rounded,
+                color: AppColors.white.withValues(alpha: 0.3), size: 16),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 // ── Filter Chip ───────────────────────────────────────────
