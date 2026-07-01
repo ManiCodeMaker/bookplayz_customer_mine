@@ -10,6 +10,7 @@ class UserSideDrawer extends StatelessWidget {
   final VoidCallback onProfileTap;
   final VoidCallback onLogout;
   final VoidCallback onWishListTap;
+  final VoidCallback onTournamentsTap;
 
   const UserSideDrawer({
     super.key,
@@ -19,6 +20,7 @@ class UserSideDrawer extends StatelessWidget {
     required this.onProfileTap,
     required this.onLogout,
     required this.onWishListTap,
+    required this.onTournamentsTap,
   });
 
   @override
@@ -137,13 +139,10 @@ class UserSideDrawer extends StatelessWidget {
                             label: 'Favorites',
                             onTap: () { onClose(); onWishListTap(); },
                           ),
-                          Visibility(
-                            visible: false,
-                            child: _DrawerItem(
-                              icon: Icons.emoji_events_outlined,
-                              label: 'Upcoming Tournaments',
-                              onTap: () {},
-                            ),
+                          _DrawerItem(
+                            icon: Icons.emoji_events_outlined,
+                            label: 'Tournaments',
+                            onTap: () { onClose(); onTournamentsTap(); },
                           ),
                           Visibility(
                             visible: false,

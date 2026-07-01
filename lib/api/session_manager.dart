@@ -148,7 +148,7 @@ class SessionManager {
 
 class SessionUser {
   final int     id;
-  final String  mobile;
+  final String? mobile;
   final String  fullName;
   final String? email;
   final String  role;
@@ -159,7 +159,7 @@ class SessionUser {
 
   const SessionUser({
     required this.id,
-    required this.mobile,
+    this.mobile,
     required this.fullName,
     this.email,
     required this.role,
@@ -171,7 +171,7 @@ class SessionUser {
 
   factory SessionUser.fromJson(Map<String, dynamic> j) => SessionUser(
     id:             j['id'] as int,
-    mobile:         j['mobile'] as String,
+    mobile:         j['mobile'] as String?,
     fullName:       j['fullName'] as String? ?? '',
     email:          j['email'] as String?,
     role:           j['role'] as String,
@@ -202,7 +202,7 @@ class SessionUser {
     String? profileImage,
   }) => SessionUser(
     id:             id,
-    mobile:         mobile         ?? this.mobile,
+    mobile:         mobile ?? this.mobile,
     fullName:       fullName       ?? this.fullName,
     email:          email          ?? this.email,
     role:           role,

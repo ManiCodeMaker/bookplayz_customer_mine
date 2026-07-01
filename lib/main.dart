@@ -10,6 +10,8 @@ import 'package:bookplayz/screens/search/search_screen.dart';
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
 import 'package:google_maps_flutter_platform_interface/google_maps_flutter_platform_interface.dart';
 import 'package:bookplayz/screens/venues/VenueDetailScreen.dart';
+import 'package:bookplayz/screens/tournaments/tournaments_screen.dart';
+import 'package:bookplayz/screens/tournaments/tournament_detail_screen.dart';
 import 'package:bookplayz/screens/wishlist/wishlist_screen.dart';
 import 'package:bookplayz/widgets/location_permission_screen.dart';
 import 'package:bookplayz/widgets/user_shell_screen.dart';
@@ -71,6 +73,11 @@ class BookPlayZApp extends StatelessWidget {
         AppRoutes.venueDetail: (context) {
           final slug = ModalRoute.of(context)!.settings.arguments as String;
           return VenueDetailScreen(slug: slug);
+        },
+        AppRoutes.tournaments: (_) => const TournamentsScreen(),
+        AppRoutes.tournamentDetail: (context) {
+          final id = ModalRoute.of(context)!.settings.arguments as int;
+          return TournamentDetailScreen(tournamentId: id);
         },
       },
 

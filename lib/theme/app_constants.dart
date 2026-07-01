@@ -77,4 +77,6 @@ class AppRoutes {
   static const String wishlist = '/wishlist';
   static const String venueDetail = '/venue-detail';
   static const String venueMap    = '/venue-map';
+  static const String tournaments = '/tournaments';
+  static const String tournamentDetail = '/tournament-detail';
 }

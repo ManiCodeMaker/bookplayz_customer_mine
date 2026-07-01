@@ -61,6 +61,7 @@ dependencies:
   google_maps_flutter_platform_interface: ^2.9.0
   razorpay_flutter: ^1.4.5
   smart_auth: ^2.0.0
+  google_sign_in: ^6.2.2
   firebase_core: ^3.13.1
   firebase_messaging: ^15.2.5
 

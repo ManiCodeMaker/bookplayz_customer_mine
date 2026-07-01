@@ -303,7 +303,10 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
     }
     if (mounted) {
       setState(() => _paymentLoading = false);
-      _showError(response.message ?? 'Payment failed. Please try again.');
+      final msg = response.message ?? '';
+      final isCancelled = response.code == Razorpay.PAYMENT_CANCELLED ||
+          msg.isEmpty || msg.toLowerCase() == 'undefined';
+      _showError(isCancelled ? 'Payment cancelled.' : msg);
     }
   }
 

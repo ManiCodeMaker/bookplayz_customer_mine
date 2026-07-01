@@ -2,11 +2,14 @@
   import 'package:flutter/material.dart';
   import 'package:flutter/services.dart';
   import 'package:google_fonts/google_fonts.dart';
+  import 'package:google_sign_in/google_sign_in.dart';
   import '../../theme/app_theme.dart';
   import '../../theme/app_constants.dart';
   import 'package:flutter_svg/flutter_svg.dart';
   import '../../api/api_constants.dart';
   import '../../api/api_service.dart';
+  import '../../api/session_manager.dart';
+  import '../../services/fcm_service.dart';
   import '../../widgets/app_loader.dart';
   import '../../widgets/app_snackbar.dart';
 
@@ -181,6 +184,27 @@
                       loading: _loading,
                       onPressed: _loading ? null : _onContinue,
                     ),
+                    const SizedBox(height: 24),
+                    const _OrDivider(label: 'Or Sign In with'),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _SocialButton(
+                          icon: SvgPicture.asset(AppImages.googleIcon,
+                              width: 24, height: 24),
+                          onTap: _onGoogleSignIn,
+                        ),
+                        if (Platform.isIOS) ...[
+                          const SizedBox(width: 24),
+                          _SocialButton(
+                            icon: const Icon(Icons.apple,
+                                color: AppColors.navyBlue, size: 28),
+                            onTap: _onAppleSignIn,
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -188,6 +212,61 @@
           ],
         ),
       );
+    }
+
+    Future<void> _onGoogleSignIn() async {
+      if (_loading) return;
+      setState(() => _loading = true);
+      try {
+        final googleSignIn = GoogleSignIn(
+          serverClientId: '571497771274-tc6htq08vmleticvvabgq2e354nbssfc.apps.googleusercontent.com',
+        );
+
+        // Sign out first so the account picker always shows
+        await googleSignIn.signOut();
+        final account = await googleSignIn.signIn();
+        if (account == null) {
+          // User cancelled
+          if (mounted) setState(() => _loading = false);
+          return;
+        }
+
+        final auth = await account.authentication;
+        final idToken = auth.idToken;
+        if (idToken == null) throw Exception('Google sign-in failed. Please try again.');
+
+        final deviceToken = await FcmService.instance.getToken();
+        final data = await AuthApi.ssoLogin(
+          provider: 'google',
+          token: idToken,
+          deviceToken: deviceToken,
+        );
+
+        await SessionManager.instance.saveSession(
+          user: SessionUser.fromJson(data['user'] as Map<String, dynamic>),
+          accessToken: data['accessToken'] as String,
+          refreshToken: data['refreshToken'] as String,
+        );
+
+        if (!mounted) return;
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRoutes.locationPermission,
+          (route) => false,
+        );
+      } catch (e) {
+        if (!mounted) return;
+        AppSnackbar.showError(
+          context,
+          e is ApiException ? e.message : e.toString().replaceAll('Exception: ', ''),
+        );
+      } finally {
+        if (mounted) setState(() => _loading = false);
+      }
+    }
+
+    Future<void> _onAppleSignIn() async {
+      // Apple sign-in — implement when Apple developer account is ready
     }
 
     void _showCountryPicker(BuildContext context) {
@@ -286,6 +365,62 @@
   // ─────────────────────────────────────────────
   // Reusable widgets
   // ─────────────────────────────────────────────
+
+  class _OrDivider extends StatelessWidget {
+    final String label;
+    const _OrDivider({required this.label});
+
+    @override
+    Widget build(BuildContext context) {
+      return Row(children: [
+        Expanded(
+            child: Divider(
+                color: Colors.white.withValues(alpha: 0.2), thickness: 1)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text(label,
+              style: TextStyle(
+                fontFamily: 'Jost',
+                fontSize: 14,
+                letterSpacing: 0.2,
+                color: Colors.white.withValues(alpha: 0.5),
+              )),
+        ),
+        Expanded(
+            child: Divider(
+                color: Colors.white.withValues(alpha: 0.2), thickness: 1)),
+      ]);
+    }
+  }
+
+  class _SocialButton extends StatelessWidget {
+    final Widget icon;
+    final VoidCallback onTap;
+    const _SocialButton({required this.icon, required this.onTap});
+
+    @override
+    Widget build(BuildContext context) {
+      return GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 72,
+          height: 48,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Center(child: icon),
+        ),
+      );
+    }
+  }
 
   class _PhoneInputField extends StatelessWidget {
     final TextEditingController controller;

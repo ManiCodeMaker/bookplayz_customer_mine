@@ -291,6 +291,8 @@ class _UserShellScreenState extends State<UserShellScreen>
                 onProfileTap: () => _onNavTap(3),
                 onWishListTap: _openFavoritesInProfile,
                 onLogout: _onLogout,
+                onTournamentsTap: () =>
+                    Navigator.pushNamed(context, AppRoutes.tournaments),
               ),
             ),
           ),

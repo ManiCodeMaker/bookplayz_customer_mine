@@ -2,6 +2,7 @@ import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/booking_model.dart';
 import 'package:bookplayz/models/venue_review_model.dart';
+import 'package:bookplayz/models/tournament_model.dart';
 
 import 'api_service.dart';
 import '../models/venue_model.dart';
@@ -61,6 +62,7 @@ class AuthApi {
   static const String requestOtpUrl   = '${ApiConstants.baseUrl}/auth/phone-auth/request';
   static const String verifyOtpUrl    = '${ApiConstants.baseUrl}/auth/phone-auth/verify';
   static const String refreshTokenUrl = '${ApiConstants.baseUrl}/auth/refresh-token';
+  static const String ssoLoginUrl     = '${ApiConstants.baseUrl}/auth/sso/login';
 
   static Future<Map<String, dynamic>> requestOtp(String mobile) async {
     final res = await ApiService.instance.post(requestOtpUrl, {
@@ -82,6 +84,20 @@ class AuthApi {
     };
     if (deviceToken != null) body['deviceToken'] = deviceToken;
     final res = await ApiService.instance.post(verifyOtpUrl, body);
+    return res['data'] as Map<String, dynamic>;
+  }
+
+  static Future<Map<String, dynamic>> ssoLogin({
+    required String provider,
+    required String token,
+    String? deviceToken,
+  }) async {
+    final body = <String, dynamic>{
+      'provider': provider,
+      'token': token,
+    };
+    if (deviceToken != null) body['deviceToken'] = deviceToken;
+    final res = await ApiService.instance.post(ssoLoginUrl, body);
     return res['data'] as Map<String, dynamic>;
   }
 }
@@ -177,6 +193,56 @@ class VenueApi {
   }
 
 
+}
+
+// ── Tournaments ───────────────────────────────────────────────────────────────
+class TournamentApi {
+  TournamentApi._();
+
+  static Future<TournamentSearchResult> fetchPublic({
+    int page = 1,
+    int limit = 20,
+    String? search,
+    String? category,
+    String? genderCategory,
+    String? date,
+    bool upcoming = true,
+  }) async {
+    var url = '${ApiConstants.baseUrl}/tournaments/public'
+        '?page=$page&limit=$limit&upcoming=$upcoming';
+    if (search != null && search.isNotEmpty) url += '&search=$search';
+    if (category != null && category.isNotEmpty) url += '&category=$category';
+    if (genderCategory != null && genderCategory.isNotEmpty) {
+      url += '&genderCategory=$genderCategory';
+    }
+    if (date != null && date.isNotEmpty) url += '&date=$date';
+
+    final res = await ApiService.instance.get(url);
+    final data = res['data'] as Map<String, dynamic>;
+    final list = (data['data'] as List<dynamic>)
+        .map((e) => TournamentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    final pagination =
+        TournamentPagination.fromJson(data['pagination'] as Map<String, dynamic>);
+    return TournamentSearchResult(tournaments: list, pagination: pagination);
+  }
+
+  static Future<TournamentModel> fetchDetail(int id) async {
+    final res = await ApiService.instance.get(
+      '${ApiConstants.baseUrl}/tournaments/public/$id',
+    );
+    return TournamentModel.fromJson(res['data'] as Map<String, dynamic>);
+  }
+
+  static Future<List<TournamentModel>> fetchMoreEvents(int id, {int limit = 5}) async {
+    final res = await ApiService.instance.get(
+      '${ApiConstants.baseUrl}/tournaments/$id/more-events?limit=$limit',
+    );
+    final list = res['data'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => TournamentModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 // ── Favorites ─────────────────────────────────────────────────────────────────
