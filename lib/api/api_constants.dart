@@ -1,8 +1,10 @@
 import 'package:bookplayz/api/session_manager.dart';
+import 'package:flutter/foundation.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/booking_model.dart';
 import 'package:bookplayz/models/venue_review_model.dart';
 import 'package:bookplayz/models/tournament_model.dart';
+import 'package:bookplayz/models/public_event_model.dart';
 
 import 'api_service.dart';
 import '../models/venue_model.dart';
@@ -242,6 +244,31 @@ class TournamentApi {
     return list
         .map((e) => TournamentModel.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  // Tournaments don't carry their own images unless a bannerImage was
+  // uploaded — fall back to the venue's primary image in that case.
+  static final Map<int, Future<String?>> _venueImageCache = {};
+
+  static Future<String?> fetchVenuePrimaryImage(int venueId) {
+    return _venueImageCache.putIfAbsent(venueId, () async {
+      try {
+        final res = await ApiService.instance.get(
+          '${ApiConstants.baseUrl}/venues/$venueId/images',
+        );
+        final list = (res['data'] as List<dynamic>? ?? [])
+            .map((e) => VenueImageModel.fromJson(e as Map<String, dynamic>))
+            .toList();
+        if (list.isEmpty) return null;
+        final primary = list.firstWhere(
+          (img) => img.isPrimary,
+          orElse: () => list.first,
+        );
+        return primary.imageUrl.isNotEmpty ? primary.imageUrl : null;
+      } catch (_) {
+        return null;
+      }
+    });
   }
 }
 
@@ -499,6 +526,103 @@ class CancellationApi {
   CancellationApi._();
   static String preview(int id) => '${ApiConstants.baseUrl}/bookings/$id/cancellation-preview';
   static String cancel(int id)  => '${ApiConstants.baseUrl}/bookings/$id/cancel';
+}
+
+// ── Venue Events (Bulk / Corporate packages) ──────────────────────────────────
+class EventsApi {
+  EventsApi._();
+
+  /// GET /events/venue/:venueId?limit= — published "packages" a venue is
+  /// running, shown as selectable options in the Bulk / Corporate flow.
+  static Future<List<PublicEventModel>> byVenue(
+    int venueId, {
+    int limit = 50,
+  }) async {
+    final res = await ApiService.instance.get(
+      '${ApiConstants.baseUrl}/events/venue/$venueId?limit=$limit',
+    );
+    final data = res['data'];
+    List<dynamic> list;
+    if (data is List) {
+      list = data;
+    } else if (data is Map && data['data'] is List) {
+      list = data['data'] as List;
+    } else {
+      list = const [];
+    }
+    return list
+        .map((e) => PublicEventModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+}
+
+// ── Enquiries (Bulk / Corporate submissions) ──────────────────────────────────
+class EnquiryApi {
+  EnquiryApi._();
+
+  /// POST /enquiries — general venue-level corporate enquiry (no package
+  /// selected).
+  static Future<void> submitVenueEnquiry({
+    required String firstName,
+    required String lastName,
+    required String phone,
+    String? email,
+    required String message,
+    int? venueId,
+  }) async {
+    await ApiService.instance.post(
+      '${ApiConstants.baseUrl}/enquiries',
+      {
+        'firstName': firstName,
+        'lastName':  lastName,
+        'phone':     phone,
+        if (email != null && email.isNotEmpty) 'email': email,
+        'message':   message,
+        if (venueId != null) 'venueId': venueId,
+      },
+    );
+  }
+
+  /// POST /events-enquiries — enquiry raised against a specific package.
+  static Future<void> submitEventEnquiry({
+    required String name,
+    required String mobileNumber,
+    String? email,
+    required String message,
+    required int eventId,
+  }) async {
+    await ApiService.instance.post(
+      '${ApiConstants.baseUrl}/events-enquiries',
+      {
+        'name':         name,
+        'mobileNumber': mobileNumber,
+        if (email != null && email.isNotEmpty) 'email': email,
+        'message':      message,
+        'eventId':      eventId,
+      },
+    );
+  }
+}
+
+// ── Push Devices ──────────────────────────────────────────────────────────────
+class PushDevicesApi {
+  PushDevicesApi._();
+
+  static const String devices =
+      '${ApiConstants.baseUrl}/push-notifications/devices';
+
+  /// Registers/refreshes this device's FCM token with the backend.
+  /// Best-effort — push registration must never break the calling flow.
+  static Future<void> registerDevice(String token) async {
+    try {
+      await ApiService.instance.post(devices, {
+        'token': token,
+        'platform': 'android',
+      });
+    } catch (e) {
+      debugPrint('[PushDevicesApi] device registration failed: $e');
+    }
+  }
 }
 
 // ── Notifications ──────────────────────────────────────────────────────────────

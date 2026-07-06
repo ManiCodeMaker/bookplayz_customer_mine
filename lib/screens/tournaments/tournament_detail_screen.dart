@@ -98,21 +98,12 @@ class _TournamentDetailScreenState extends State<TournamentDetailScreen> {
             borderRadius: BorderRadius.circular(16),
             child: AspectRatio(
               aspectRatio: 16 / 9,
-              child: t.bannerImage != null && t.bannerImage!.isNotEmpty
-                  ? Image.network(
-                      t.bannerImage!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppColors.white.withValues(alpha: 0.08),
-                        child: const Icon(Icons.emoji_events_outlined,
-                            color: AppColors.limeGreen, size: 48),
-                      ),
-                    )
-                  : Container(
-                      color: AppColors.white.withValues(alpha: 0.08),
-                      child: const Icon(Icons.emoji_events_outlined,
-                          color: AppColors.limeGreen, size: 48),
-                    ),
+              child: _TournamentDetailImage(
+                bannerImage: t.bannerImage,
+                venueId: t.venueId,
+                placeholderColor: AppColors.white.withValues(alpha: 0.08),
+                logoPadding: 32,
+              ),
             ),
           ),
           const SizedBox(height: 16),
@@ -270,21 +261,12 @@ class _MoreEventTile extends StatelessWidget {
             SizedBox(
               width: 72,
               height: 72,
-              child: tournament.bannerImage != null && tournament.bannerImage!.isNotEmpty
-                  ? Image.network(
-                      tournament.bannerImage!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: AppColors.navyBlue.withValues(alpha: 0.08),
-                        child: const Icon(Icons.emoji_events_outlined,
-                            color: AppColors.navyBlue, size: 24),
-                      ),
-                    )
-                  : Container(
-                      color: AppColors.navyBlue.withValues(alpha: 0.08),
-                      child: const Icon(Icons.emoji_events_outlined,
-                          color: AppColors.navyBlue, size: 24),
-                    ),
+              child: _TournamentDetailImage(
+                bannerImage: tournament.bannerImage,
+                venueId: tournament.venueId,
+                placeholderColor: AppColors.navyBlue.withValues(alpha: 0.08),
+                logoPadding: 14,
+              ),
             ),
             Expanded(
               child: Padding(
@@ -322,6 +304,59 @@ class _MoreEventTile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Shows the tournament's own banner image; if it has none (or fails to
+/// load), falls back to the venue's primary image before giving up on a
+/// generic placeholder.
+class _TournamentDetailImage extends StatelessWidget {
+  final String? bannerImage;
+  final int venueId;
+  final Color placeholderColor;
+  final double logoPadding;
+
+  const _TournamentDetailImage({
+    required this.bannerImage,
+    required this.venueId,
+    required this.placeholderColor,
+    required this.logoPadding,
+  });
+
+  Widget _placeholder() => Container(
+        color: placeholderColor,
+        alignment: Alignment.center,
+        padding: EdgeInsets.all(logoPadding),
+        child: Image.asset(AppImages.logo, fit: BoxFit.contain),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    if (bannerImage != null && bannerImage!.isNotEmpty) {
+      return Image.network(
+        bannerImage!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _venueFallback(),
+      );
+    }
+    return _venueFallback();
+  }
+
+  Widget _venueFallback() {
+    return FutureBuilder<String?>(
+      future: TournamentApi.fetchVenuePrimaryImage(venueId),
+      builder: (context, snapshot) {
+        final url = snapshot.data;
+        if (url != null && url.isNotEmpty) {
+          return Image.network(
+            url,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => _placeholder(),
+          );
+        }
+        return _placeholder();
+      },
     );
   }
 }

@@ -3,6 +3,7 @@ import 'package:bookplayz/models/booking_model.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/screens/venues/booking_summary_screen.dart';
+import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:flutter/material.dart';
@@ -266,10 +267,15 @@ class _BookingScreenState extends State<BookingScreen> {
                       ? Image.network(
                           widget.venue.primaryImage!,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              Container(color: AppColors.navyBlue),
+                          errorBuilder: (_, __, ___) => Image.asset(
+                            AppImages.dashboardCarousel,
+                            fit: BoxFit.cover,
+                          ),
                         )
-                      : Container(color: AppColors.navyBlue),
+                      : Image.asset(
+                          AppImages.dashboardCarousel,
+                          fit: BoxFit.cover,
+                        ),
                 ),
               ),
 

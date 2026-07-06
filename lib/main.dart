@@ -42,6 +42,7 @@ void main() async {
   await SessionManager.instance.restoreSession();
   if (SessionManager.instance.isLoggedIn) {
     try { await FavoritesApi.fetchIds(); } catch (_) {}
+    FcmService.instance.syncTokenIfLoggedIn(); // fire-and-forget
   }
   runApp(const BookPlayZApp());
 }

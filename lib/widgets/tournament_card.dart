@@ -1,3 +1,4 @@
+import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/tournament_model.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
@@ -11,12 +12,55 @@ class _TournamentNoImagePlaceholder extends StatelessWidget {
     return Container(
       width: double.infinity,
       height: double.infinity,
-      color: AppColors.navyBlue.withValues(alpha: 0.08),
-      child: Icon(
-        Icons.emoji_events_outlined,
-        size: 32,
-        color: AppColors.navyBlue.withValues(alpha: 0.35),
-      ),
+      color: AppColors.navyBlue.withValues(alpha: 0.05),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(20),
+      child: Image.asset(AppImages.logo, fit: BoxFit.contain),
+    );
+  }
+}
+
+/// Shows the tournament's own banner image; if it has none (or fails to
+/// load), falls back to the venue's primary image before giving up on a
+/// generic placeholder.
+class _TournamentThumbnail extends StatelessWidget {
+  final String? bannerImage;
+  final int venueId;
+
+  const _TournamentThumbnail({required this.bannerImage, required this.venueId});
+
+  @override
+  Widget build(BuildContext context) {
+    if (bannerImage != null && bannerImage!.isNotEmpty) {
+      return Image.network(
+        bannerImage!,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => _VenueFallbackImage(venueId: venueId),
+      );
+    }
+    return _VenueFallbackImage(venueId: venueId);
+  }
+}
+
+class _VenueFallbackImage extends StatelessWidget {
+  final int venueId;
+  const _VenueFallbackImage({required this.venueId});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String?>(
+      future: TournamentApi.fetchVenuePrimaryImage(venueId),
+      builder: (context, snapshot) {
+        final url = snapshot.data;
+        if (url != null && url.isNotEmpty) {
+          return Image.network(
+            url,
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => const _TournamentNoImagePlaceholder(),
+          );
+        }
+        return const _TournamentNoImagePlaceholder();
+      },
     );
   }
 }
@@ -61,15 +105,10 @@ class TournamentCard extends StatelessWidget {
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
-                    tournament.bannerImage != null &&
-                            tournament.bannerImage!.isNotEmpty
-                        ? Image.network(
-                            tournament.bannerImage!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, __, ___) =>
-                                const _TournamentNoImagePlaceholder(),
-                          )
-                        : const _TournamentNoImagePlaceholder(),
+                    _TournamentThumbnail(
+                      bannerImage: tournament.bannerImage,
+                      venueId: tournament.venueId,
+                    ),
                     if (date != null)
                       Positioned(
                         left: 8,

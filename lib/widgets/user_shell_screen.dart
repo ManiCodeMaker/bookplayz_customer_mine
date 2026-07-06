@@ -217,32 +217,35 @@ class _UserShellScreenState extends State<UserShellScreen>
             children: [
               ValueListenableBuilder<String?>(
                 valueListenable: SessionManager.instance.cityNotifier,
-                builder: (_, city, _) => ValueListenableBuilder<double>(
-                  valueListenable: _scrollProgress,
-                  builder: (_, progress, _) => HeroBanner(
-                    scrollProgress: _navIndex == 0 ? progress : 0.0,
-                    showCarousel: _navIndex == 0,
-                    controller: _navIndex == 0 ? _heroController : null,
-                    showSearch: _navIndex == 0,
-                    onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
-                    showNotificationBadge: _unreadCount > 0,
-                    onNotificationTap: _onNotificationTap,
-                    onMenuTap: _openDrawer,
-                    onLocationTap: _openCityPicker,
-                    onResetTap: city != null ? _resetToGps : null,
-                    city: city ?? (SessionManager.instance.latitude != null ? 'Near You' : 'Select City'),
-                    address: city != null
-                        ? 'Tap to change location'
-                        : (SessionManager.instance.latitude != null
-                            ? 'Using current location'
-                            : 'Search for your city'),
+                builder: (_, city, _) => ValueListenableBuilder<String?>(
+                  valueListenable: SessionManager.instance.gpsCityNotifier,
+                  builder: (_, gpsCity, _) => ValueListenableBuilder<double>(
+                    valueListenable: _scrollProgress,
+                    builder: (_, progress, _) => HeroBanner(
+                      scrollProgress: _navIndex == 0 ? progress : 0.0,
+                      showCarousel: _navIndex == 0,
+                      controller: _navIndex == 0 ? _heroController : null,
+                      showSearch: _navIndex == 0,
+                      onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
+                      showNotificationBadge: _unreadCount > 0,
+                      onNotificationTap: _onNotificationTap,
+                      onMenuTap: _openDrawer,
+                      onLocationTap: _openCityPicker,
+                      onResetTap: city != null ? _resetToGps : null,
+                      city: city ?? (SessionManager.instance.latitude != null ? 'Near You' : 'Select City'),
+                      address: city != null
+                          ? 'Tap to change location'
+                          : (SessionManager.instance.latitude != null
+                              ? (gpsCity ?? 'Using current location')
+                              : 'Search for your city'),
+                    ),
                   ),
                 ),
               ),
               Expanded(
                 child: NotificationListener<ScrollNotification>(
                   onNotification: (n) {
-                    if (_navIndex == 0) {
+                    if (_navIndex == 0 && n.metrics.axis == Axis.vertical) {
                       _scrollProgress.value =
                           (n.metrics.pixels / _collapseThreshold).clamp(0.0, 1.0);
                     }

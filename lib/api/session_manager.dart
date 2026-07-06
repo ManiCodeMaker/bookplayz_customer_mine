@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
@@ -11,6 +12,10 @@ class SessionManager {
   static final SessionManager instance = SessionManager._();
   final ValueNotifier<Set<int>> favoriteIds = ValueNotifier<Set<int>>({});
   final ValueNotifier<String?> cityNotifier = ValueNotifier<String?>(null);
+
+  /// City name resolved from the GPS coordinates (reverse geocoding).
+  /// Independent of [cityNotifier], which is the user's manual city pick.
+  final ValueNotifier<String?> gpsCityNotifier = ValueNotifier<String?>(null);
 
   SessionUser? _user;
   String?      _accessToken;
@@ -25,6 +30,7 @@ class SessionManager {
   double?      get latitude       => _latitude;
   double?      get longitude      => _longitude;
   String?      get city           => cityNotifier.value;
+  String?      get gpsCity        => gpsCityNotifier.value;
 
 
   // ── Location ──────────────────────────────────────────────────────────────
@@ -33,7 +39,13 @@ class SessionManager {
     final prefs = await SharedPreferences.getInstance();
     _latitude  = prefs.getDouble('bpz_lat');
     _longitude = prefs.getDouble('bpz_lng');
-    cityNotifier.value = prefs.getString('bpz_city');
+    cityNotifier.value    = prefs.getString('bpz_city');
+    gpsCityNotifier.value = prefs.getString('bpz_gps_city');
+
+    // Existing installs have lat/lng saved but never geocoded them.
+    if (gpsCityNotifier.value == null && _latitude != null && _longitude != null) {
+      _resolveGpsCity(_latitude!, _longitude!);
+    }
   }
 
   Future<void> fetchAndStoreLocation() async {
@@ -60,8 +72,30 @@ class SessionManager {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setDouble('bpz_lat', pos.latitude);
       await prefs.setDouble('bpz_lng', pos.longitude);
+
+      await _resolveGpsCity(pos.latitude, pos.longitude);
     } catch (_) {
       // silently fall back — callers null-check lat/lng
+    }
+  }
+
+  /// Reverse-geocodes lat/lng into a city name for the topbar.
+  /// Failure is non-fatal: the UI falls back to 'Using current location'.
+  Future<void> _resolveGpsCity(double lat, double lng) async {
+    try {
+      final placemarks = await placemarkFromCoordinates(lat, lng);
+      if (placemarks.isEmpty) return;
+
+      final p = placemarks.first;
+      final city = [p.locality, p.subAdministrativeArea, p.administrativeArea]
+          .firstWhere((s) => s != null && s.trim().isNotEmpty, orElse: () => null);
+      if (city == null) return;
+
+      gpsCityNotifier.value = city;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('bpz_gps_city', city);
+    } catch (_) {
+      // geocoder unavailable (no network / no Play services) — keep fallback text
     }
   }
 

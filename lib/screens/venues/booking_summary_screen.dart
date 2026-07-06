@@ -6,6 +6,7 @@ import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/screens/venues/booking_confirmation_screen.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
+import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
@@ -390,10 +391,15 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
                                     ? Image.network(
                                         widget.venue.primaryImage!,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) =>
-                                            Container(color: AppColors.navyBlue),
+                                        errorBuilder: (_, __, ___) => Image.asset(
+                                          AppImages.dashboardCarousel,
+                                          fit: BoxFit.cover,
+                                        ),
                                       )
-                                    : Container(color: AppColors.navyBlue),
+                                    : Image.asset(
+                                        AppImages.dashboardCarousel,
+                                        fit: BoxFit.cover,
+                                      ),
                               ),
                             ),
                             SliverToBoxAdapter(

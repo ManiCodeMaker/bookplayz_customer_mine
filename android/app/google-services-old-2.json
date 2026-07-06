@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "425131648806",
-    "project_id": "bookplayzadmin-2e925",
-    "storage_bucket": "bookplayzadmin-2e925.firebasestorage.app"
+    "project_number": "549240766392",
+    "project_id": "bookplayz-app",
+    "storage_bucket": "bookplayz-app.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:425131648806:android:7e58417ac9051fe87f43e7",
+        "mobilesdk_app_id": "1:549240766392:android:01e4109fe1793526b3594d",
         "android_client_info": {
           "package_name": "com.bookplayz.app"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyCz7pRearrpq0QBS2S9FfcSgqwFuLwWF2c"
+          "current_key": "AIzaSyBBBvnYZvOgMB1JCwZONx1rn588fdY9kh0"
         }
       ],
       "services": {
