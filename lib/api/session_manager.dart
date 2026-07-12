@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'api_constants.dart';
 import 'api_service.dart';
 import 'package:flutter/foundation.dart';
 
@@ -17,16 +18,23 @@ class SessionManager {
   /// Independent of [cityNotifier], which is the user's manual city pick.
   final ValueNotifier<String?> gpsCityNotifier = ValueNotifier<String?>(null);
 
-  SessionUser? _user;
-  String?      _accessToken;
-  String?      _refreshToken;
-  double?      _latitude;
-  double?      _longitude;
+  /// Notifies listeners (e.g. the profile tab) whenever the session user
+  /// changes — profile edits, email verification, image upload, etc.
+  final ValueNotifier<SessionUser?> userNotifier =
+      ValueNotifier<SessionUser?>(null);
 
-  SessionUser? get currentUser    => _user;
-  set user(SessionUser? u)        => _user = u;
+  String? _accessToken;
+  String? _refreshToken;
+  double? _latitude;
+  double? _longitude;
+
+  SessionUser? get currentUser => userNotifier.value;
+  set user(SessionUser? u) {
+    userNotifier.value = u;
+    _persistSession();
+  }
   String?      get accessToken    => _accessToken;
-  bool         get isLoggedIn     => _accessToken != null && _user != null;
+  bool         get isLoggedIn     => _accessToken != null && currentUser != null;
   double?      get latitude       => _latitude;
   double?      get longitude      => _longitude;
   String?      get city           => cityNotifier.value;
@@ -106,9 +114,9 @@ class SessionManager {
     required String accessToken,
     required String refreshToken,
   }) async {
-    _user         = user;
-    _accessToken  = accessToken;
-    _refreshToken = refreshToken;
+    userNotifier.value = user;
+    _accessToken       = accessToken;
+    _refreshToken      = refreshToken;
 
     ApiService.instance.setToken(accessToken);
 
@@ -117,6 +125,43 @@ class SessionManager {
       'user':         user.toJson(),
       'accessToken':  accessToken,
       'refreshToken': refreshToken,
+    }));
+
+    // Login responses omit profileImage / verified flags — pull the full
+    // record in the background.
+    refreshUserFromServer();
+  }
+
+  /// Refreshes the session user from /auth/me. Best-effort: on failure the
+  /// cached user is kept.
+  Future<void> refreshUserFromServer() async {
+    if (!isLoggedIn) return;
+    try {
+      final res  = await ApiService.instance.get(ProfileApi.me);
+      final data = res['data'] as Map<String, dynamic>;
+      user = currentUser!.copyWith(
+        fullName:       data['fullName']       as String?,
+        email:          data['email']          as String?,
+        mobile:         data['mobile']         as String?,
+        emailVerified:  data['emailVerified']  as bool?,
+        mobileVerified: data['mobileVerified'] as bool?,
+        profileImage:   data['profileImage']   as String?,
+      );
+    } catch (_) {
+      // offline / token race — keep the cached user
+    }
+  }
+
+  /// Rewrites the stored session with the current user so profile changes
+  /// (name, image, email verification) survive an app restart.
+  Future<void> _persistSession() async {
+    final u = userNotifier.value;
+    if (u == null || _accessToken == null || _refreshToken == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_kSessionKey, jsonEncode({
+      'user':         u.toJson(),
+      'accessToken':  _accessToken,
+      'refreshToken': _refreshToken,
     }));
   }
 
@@ -149,16 +194,18 @@ class SessionManager {
         return false;
       }
 
-      _user         = SessionUser.fromJson(json['user'] as Map<String, dynamic>);
-      _accessToken  = newToken;
-      _refreshToken = refreshToken;
+      userNotifier.value = SessionUser.fromJson(json['user'] as Map<String, dynamic>);
+      _accessToken       = newToken;
+      _refreshToken      = refreshToken;
       ApiService.instance.setToken(newToken);
 
       await prefs.setString(_kSessionKey, jsonEncode({
-        'user':         _user!.toJson(),
+        'user':         userNotifier.value!.toJson(),
         'accessToken':  newToken,
         'refreshToken': refreshToken,
       }));
+
+      refreshUserFromServer(); // background — see saveSession
       return true;
     } catch (_) {
       await clearSession();
@@ -169,9 +216,9 @@ class SessionManager {
   // ── Clear on logout ───────────────────────────────────────────────────────
 
   Future<void> clearSession() async {
-    _user         = null;
-    _accessToken  = null;
-    _refreshToken = null;
+    userNotifier.value = null;
+    _accessToken       = null;
+    _refreshToken      = null;
     ApiService.instance.clearToken();
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_kSessionKey);

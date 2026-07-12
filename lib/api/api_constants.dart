@@ -109,6 +109,7 @@ class ProfileApi {
   ProfileApi._();
   static const String me = '${ApiConstants.baseUrl}/auth/me';
   static const String verifyEmailRequest = '${ApiConstants.baseUrl}/auth/verify-email/request';
+  static const String verifyEmail        = '${ApiConstants.baseUrl}/auth/verify-email';
 }
 
 // ── Venues ────────────────────────────────────────────────────────────────────

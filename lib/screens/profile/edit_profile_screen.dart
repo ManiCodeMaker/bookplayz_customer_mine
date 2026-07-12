@@ -153,14 +153,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     }
   }
 
-  void _showVerifyEmailSheet() {
-    showModalBottomSheet(
+  Future<void> _showVerifyEmailSheet() async {
+    final verified = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _VerifyEmailSheet(email: _emailController.text.trim()),
     );
+
+    if (verified == true && mounted) {
+      setState(() => _emailVerified = true);
+      AppSnackbar.showSuccess(context, 'Email verified successfully');
+    }
   }
 
   // ── Build ────────────────────────────────────────────────────────────────────
@@ -539,11 +544,45 @@ class _VerifyEmailSheetState extends State<_VerifyEmailSheet>
     }
   }
 
+  Future<void> _verifyOtp() async {
+    final otp = _controllers.map((c) => c.text.trim()).join();
+    if (otp.length < 4) {
+      AppSnackbar.showError(context, 'Please enter the 4-digit OTP.');
+      return;
+    }
+
+    FocusScope.of(context).unfocus();
+    setState(() => _loading = true);
+    try {
+      final res = await ApiService.instance.post(ProfileApi.verifyEmail, {'otp': otp});
+      final data = res['data'] as Map<String, dynamic>?;
+
+      // Sync session so the profile screens reflect the verified state
+      final session = SessionManager.instance;
+      if (session.currentUser != null) {
+        session.user = session.currentUser!.copyWith(
+          emailVerified: data?['emailVerified'] as bool? ?? true,
+        );
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pop(true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _loading = false);
+      final msg = e is ApiException ? e.message : 'Verification failed. Please try again.';
+      AppSnackbar.showError(context, msg);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenHeight = MediaQuery.of(context).size.height;
 
-    return SafeArea(
+    return Padding(
+      // Lift the sheet above the keyboard while the OTP boxes are focused
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: SafeArea(
       top: false,
       child: ConstrainedBox(
         constraints: BoxConstraints(maxHeight: screenHeight * 0.78),
@@ -663,12 +702,7 @@ class _VerifyEmailSheetState extends State<_VerifyEmailSheet>
                     width: double.infinity,
                     height: 52,
                     child: ElevatedButton(
-                      onPressed: _loading
-                          ? null
-                          : () {
-                              AppSnackbar.showSuccess(
-                                  context, 'OTP validation coming soon');
-                            },
+                      onPressed: _loading ? null : _verifyOtp,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.limeGreen,
                         disabledBackgroundColor:
@@ -704,6 +738,7 @@ class _VerifyEmailSheetState extends State<_VerifyEmailSheet>
             ),
           ),
         ),
+      ),
       ),
     );
   }

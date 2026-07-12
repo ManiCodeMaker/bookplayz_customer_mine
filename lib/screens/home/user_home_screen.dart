@@ -311,12 +311,12 @@ Future<void> _toggleFavorite(int venueId) async {
             ),
 
           // ── Bulk booking promo banner ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
-              child: _PromoBannerCarousel(banners: _promoBanners),
-            ),
-          ),
+          // SliverToBoxAdapter(
+          //   child: Padding(
+          //     padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+          //     child: _PromoBannerCarousel(banners: _promoBanners),
+          //   ),
+          // ),
 
           // ── Team Games section ──
           // SliverToBoxAdapter(
@@ -359,17 +359,17 @@ Future<void> _toggleFavorite(int venueId) async {
           ),
 
           // ── Invite Friends banner ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
-              child: InviteFriendsBanner(
-                discount: '₹200',
-                onInviteTap: () {
-                  // TODO: launch share sheet
-                },
-              ),
-            ),
-          ),
+          // SliverToBoxAdapter(
+          //   child: Padding(
+          //     padding: const EdgeInsets.fromLTRB(0, 20, 0, 0),
+          //     child: InviteFriendsBanner(
+          //       discount: '₹200',
+          //       onInviteTap: () {
+          //         // TODO: launch share sheet
+          //       },
+          //     ),
+          //   ),
+          // ),
 
           // ── Bottom padding ──
           const SliverToBoxAdapter(

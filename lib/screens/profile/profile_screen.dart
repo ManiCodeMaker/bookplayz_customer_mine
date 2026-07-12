@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/screens/profile/edit_profile_screen.dart';
 import 'package:bookplayz/screens/profile/fav_screen.dart';
+import 'package:bookplayz/screens/profile/privacy_policy_screen.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
 
@@ -60,11 +61,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 builder: (_) => FavScreen(onBack: _popRoute),
               );
 
+            case '/privacy-policy':
+              return MaterialPageRoute(
+                builder: (_) => PrivacyPolicyScreen(onBack: _popRoute),
+              );
+
             default:
               return MaterialPageRoute(
                 builder: (_) => _ProfileHome(
-                  onEditProfileTap: () => _pushRoute('/edit-profile'),
-                  onFavoritesTap: () => _pushRoute('/favorites'),
+                  onEditProfileTap:    () => _pushRoute('/edit-profile'),
+                  onFavoritesTap:      () => _pushRoute('/favorites'),
+                  onPrivacyPolicyTap:  () => _pushRoute('/privacy-policy'),
                 ),
               );
           }
@@ -78,13 +85,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 class _ProfileHome extends StatelessWidget {
   final VoidCallback? onEditProfileTap;
   final VoidCallback? onFavoritesTap;
+  final VoidCallback? onPrivacyPolicyTap;
 
-  const _ProfileHome({this.onEditProfileTap, this.onFavoritesTap});
+  const _ProfileHome({
+    this.onEditProfileTap,
+    this.onFavoritesTap,
+    this.onPrivacyPolicyTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final user = SessionManager.instance.currentUser;
+    return ValueListenableBuilder<SessionUser?>(
+      valueListenable: SessionManager.instance.userNotifier,
+      builder: (context, user, _) => _buildContent(context, user),
+    );
+  }
 
+  Widget _buildContent(BuildContext context, SessionUser? user) {
     return Container(
       color: AppColors.navyBlue,
       child: SingleChildScrollView(
@@ -135,6 +152,13 @@ class _ProfileHome extends StatelessWidget {
                         label: 'Edit Profile',
                         subtitle: 'Name, email, profile photo',
                         onTap: onEditProfileTap ?? () {},
+                      ),
+                      _MenuItem(
+                        icon: Icons.privacy_tip_outlined,
+                        label: 'Privacy & Policy',
+                        subtitle: 'How we handle your data',
+                        onTap: onPrivacyPolicyTap ?? () {},
+                        showDivider: false,
                       ),
                     ],
                   ),
