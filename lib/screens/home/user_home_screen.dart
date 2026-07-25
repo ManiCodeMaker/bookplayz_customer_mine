@@ -17,7 +17,8 @@ import '../../widgets/venue_filters.dart';
 
 class UserHomeScreen extends StatefulWidget {
   final VoidCallback? onSeeAll;
-  const UserHomeScreen({super.key, this.onSeeAll});
+  final ValueChanged<String>? onSportSelected;
+  const UserHomeScreen({super.key, this.onSeeAll, this.onSportSelected});
 
   @override
   State<UserHomeScreen> createState() => _UserHomeScreenState();
@@ -182,14 +183,7 @@ Future<void> _toggleFavorite(int venueId) async {
       child: CustomScrollView(
         controller: _scrollController,
         slivers: [
-          // ── Stats grid (4 cards) ──
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 20, 16, 0),
-              child: _StatsGrid(),
-            ),
-          ),
-
+         
           // ── Popular Venues title ──
           SliverToBoxAdapter(
             child: Padding(
@@ -224,7 +218,10 @@ Future<void> _toggleFavorite(int venueId) async {
             child: SportFilterRow(
               sports: _sports,
               activeIndex: _activeSport,
-              onChanged: (i) => setState(() => _activeSport = i),
+              onChanged: (i) {
+                setState(() => _activeSport = i);
+                widget.onSportSelected?.call(_sports[i]['label']!);
+              },
             ),
           ),
 
@@ -296,7 +293,8 @@ Future<void> _toggleFavorite(int venueId) async {
             SliverList(
               delegate: SliverChildBuilderDelegate(
                 (_, i) => Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  padding: EdgeInsets.fromLTRB(
+                      16, 0, 16, i == _venues.length - 1 ? 12 : 16),
                   child: ValueListenableBuilder<Set<int>>(
                     valueListenable: SessionManager.instance.favoriteIds,
                     builder: (_, favIds, __) => VenueCard(
@@ -338,6 +336,17 @@ Future<void> _toggleFavorite(int venueId) async {
           //   ),
           // ),
 
+           // ── Stats grid (4 cards) ──
+          SliverToBoxAdapter(
+            child: Transform.translate(
+              offset: const Offset(0, -12),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                child: _StatsGrid(),
+              ),
+            ),
+          ),
+
           // ── Reviews section ──
           SliverToBoxAdapter(
             child: _SectionHeader(
@@ -371,10 +380,10 @@ Future<void> _toggleFavorite(int venueId) async {
           //   ),
           // ),
 
-          // ── Bottom padding ──
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 24),
-          ),
+          // // ── Bottom padding ──
+          // const SliverToBoxAdapter(
+          //   child: SizedBox(height: 24),
+          // ),
         ],
       ),
     );
@@ -434,7 +443,7 @@ class _StatCard extends StatelessWidget {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        color: AppColors.veryDarkBlue,
+        color: AppColors.veryDarkBlue.withValues(alpha: 0.5),
         child: Stack(
           children: [
             // Text — top-left

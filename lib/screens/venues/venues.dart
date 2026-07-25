@@ -37,6 +37,7 @@ class VenuesScreenState extends State<VenuesScreen> {
   // ── Filters ──
   String? _selectedCategoryId; // for Sport filter
   VenueSortType _sortType = VenueSortType.none;
+  String? _pendingSportName; // sport requested from Home before venues/categories loaded
 
   // ── Sport filter options built from fetched data ──
   List<VenueSportOption> _sportOptions = [];
@@ -81,6 +82,25 @@ class VenuesScreenState extends State<VenuesScreen> {
   }
 
   void refresh() => _loadVenues();
+
+  // ── Called from Home when a sport icon is tapped ──
+  void selectSportByName(String name) {
+    VenueSportOption? match;
+    for (final o in _sportOptions) {
+      if (o.name.toUpperCase() == name.toUpperCase()) {
+        match = o;
+        break;
+      }
+    }
+    if (match == null) {
+      // Categories aren't loaded yet — resolve once _loadVenues() finishes.
+      _pendingSportName = name;
+      return;
+    }
+    _pendingSportName = null;
+    setState(() => _selectedCategoryId = match!.categoryId.toString());
+    _applyFilters();
+  }
 
 
 
@@ -179,6 +199,9 @@ class VenuesScreenState extends State<VenuesScreen> {
         _buildSportOptions();
         _applyFilters();
       });
+      if (_pendingSportName != null) {
+        selectSportByName(_pendingSportName!);
+      }
     } catch (e) {
       setState(() {
         _loading = false;
@@ -274,6 +297,7 @@ class VenuesScreenState extends State<VenuesScreen> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.navyBlue,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),

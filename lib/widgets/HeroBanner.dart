@@ -1,4 +1,3 @@
-import 'package:bookplayz/widgets/hero_banner_searchbar.dart';
 import 'package:bookplayz/widgets/hero_banner_topbar.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
@@ -11,13 +10,12 @@ import '../../theme/app_constants.dart';
 ///
 /// Variants:
 ///   • Home tab  → showCarousel: true, controller: _pageController
-///                 optionally showSearch: true for the search bar
+///                 optionally onSearchTap for the compact search icon
 ///   • All other → backgroundImage: AppImages.someAsset (each
 ///                 screen passes its own sport-themed image)
 ///
 /// Sub-components (always composed inside this widget):
-///   • HeroBannerTopBar  — menu / location / notification row
-///   • HeroBannerSearchBar (optional) — shown when showSearch: true
+///   • HeroBannerTopBar — menu(avatar) / search / location / notification row
 /// ─────────────────────────────────────────────────────────────
 class HeroBanner extends StatelessWidget {
   // ── Background ──
@@ -36,22 +34,15 @@ class HeroBanner extends StatelessWidget {
 
   // ── Top-bar passthrough ──
   final String city;
-  final String address;
   final VoidCallback? onMenuTap;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onLocationTap;
   final VoidCallback? onResetTap;
   final bool showNotificationBadge;
 
-  // ── Search bar ──
-  /// Show the search bar below the top-bar row.
-  final bool showSearch;
-  final String searchHint;
-  final TextEditingController? searchController;
-  final ValueChanged<String>? onSearchChanged;
-
-  /// If set, the search bar becomes a read-only tap target that calls
-  /// this callback instead of showing an inline keyboard.
+  // ── Search ──
+  /// If set, a compact search icon button is shown in the top-bar row
+  /// (next to the menu/avatar) and calls this on tap.
   final VoidCallback? onSearchTap;
 
   // ── Promo overlay (home carousel only) ──
@@ -72,17 +63,12 @@ class HeroBanner extends StatelessWidget {
     this.backgroundImage,
     // top-bar
     this.city = 'Coimbatore, TN',
-    this.address = 'Ramakrishna Nagar, Palanigoundan pudur...',
     this.onMenuTap,
     this.onNotificationTap,
     this.onLocationTap,
     this.onResetTap,
     this.showNotificationBadge = false,
     // search
-    this.showSearch = false,
-    this.searchHint = 'Search...',
-    this.searchController,
-    this.onSearchChanged,
     this.onSearchTap,
     // promo
     this.promoOverlay,
@@ -94,17 +80,16 @@ class HeroBanner extends StatelessWidget {
   // minH is dynamic: status-bar safe area + TopBar's own padding (20) + icon row (40).
   double _computeHeight(BuildContext context) {
     if (showCarousel) {
-      double maxH = 220;
-      if (showSearch) maxH += 54;
+      double maxH = 260;
       if (promoOverlay != null) maxH += 80;
       final double minH = MediaQuery.of(context).padding.top + 90;
       return maxH + (minH - maxH) * scrollProgress;
     }
     // Static header: compact — minimum 130 so the banner has visible presence.
-    return showSearch ? 160 : 130;
+    return 130;
   }
 
-  // Elements that should fade as the banner collapses (search bar + dots).
+  // Elements that should fade as the banner collapses (dots).
   double get _fadeOpacity => (1.0 - scrollProgress * 2.0).clamp(0.0, 1.0);
 
   @override
@@ -119,36 +104,15 @@ class HeroBanner extends StatelessWidget {
           // ── 2. Gradient / brush-stroke overlay ───────────────
           _buildOverlay(),
 
-          // ── 3. Top-bar + optional search ─────────────────────
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              HeroBannerTopBar(
-                city: city,
-                address: address,
-                onMenuTap: onMenuTap,
-                onNotificationTap: onNotificationTap,
-                onLocationTap: onLocationTap,
-                onResetTap: onResetTap,
-                showNotificationBadge: showNotificationBadge,
-              ),
-              if (showSearch)
-                SizedBox(
-                  // Shrink allocated height as it fades so the Column never overflows.
-                  height: (62.0 * _fadeOpacity).clamp(0.0, 62.0),
-                  child: ClipRect(
-                    child: Opacity(
-                      opacity: _fadeOpacity,
-                      child: HeroBannerSearchBar(
-                        hint: searchHint,
-                        controller: searchController,
-                        onChanged: onSearchChanged,
-                        onTap: onSearchTap,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
+          // ── 3. Top-bar (menu/avatar, search, location, notification) ──
+          HeroBannerTopBar(
+            city: city,
+            onMenuTap: onMenuTap,
+            onNotificationTap: onNotificationTap,
+            onLocationTap: onLocationTap,
+            onResetTap: onResetTap,
+            onSearchTap: onSearchTap,
+            showNotificationBadge: showNotificationBadge,
           ),
 
           // ── 4. Promo overlay (carousel only, bottom-centre) ───

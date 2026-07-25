@@ -104,6 +104,13 @@ class _UserShellScreenState extends State<UserShellScreen>
     }
   }
 
+  void _onHomeSportSelected(String sportName) {
+    // Set (or queue) the filter before switching tabs so it's ready
+    // by the time _onNavTap(1)'s refresh() finishes loading.
+    _venuesKey.currentState?.selectSportByName(sportName);
+    _onNavTap(1);
+  }
+
   void _openFavoritesInProfile() {
     _closeDrawer();
     Future.delayed(const Duration(milliseconds: 300), () {
@@ -183,6 +190,7 @@ class _UserShellScreenState extends State<UserShellScreen>
     _screens = [
       UserHomeScreen(
         onSeeAll: () => _onNavTap(1),
+        onSportSelected: _onHomeSportSelected,
       ),
       VenuesScreen(key: _venuesKey, onBack: _goBack),
       MyBookingScreen(
@@ -225,19 +233,19 @@ class _UserShellScreenState extends State<UserShellScreen>
                       scrollProgress: _navIndex == 0 ? progress : 0.0,
                       showCarousel: _navIndex == 0,
                       controller: _navIndex == 0 ? _heroController : null,
-                      showSearch: _navIndex == 0,
-                      onSearchTap: () => Navigator.pushNamed(context, AppRoutes.search),
+                      onSearchTap: _navIndex == 0
+                          ? () => Navigator.pushNamed(context, AppRoutes.search)
+                          : null,
                       showNotificationBadge: _unreadCount > 0,
                       onNotificationTap: _onNotificationTap,
                       onMenuTap: _openDrawer,
                       onLocationTap: _openCityPicker,
                       onResetTap: city != null ? _resetToGps : null,
-                      city: city ?? (SessionManager.instance.latitude != null ? 'Near You' : 'Select City'),
-                      address: city != null
-                          ? 'Tap to change location'
-                          : (SessionManager.instance.latitude != null
-                              ? (gpsCity ?? 'Using current location')
-                              : 'Search for your city'),
+                      city: city ??
+                          gpsCity ??
+                          (SessionManager.instance.latitude != null
+                              ? 'Near You'
+                              : 'Select City'),
                     ),
                   ),
                 ),

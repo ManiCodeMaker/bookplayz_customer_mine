@@ -25,8 +25,10 @@ class _CityPickerSheet extends StatefulWidget {
 class _CityPickerSheetState extends State<_CityPickerSheet> {
   // ── State list ──
   List<StateModel> _states = [];
+  List<StateModel> _filteredStates = [];
   bool _loadingStates = true;
   String? _statesError;
+  final TextEditingController _stateSearchCtrl = TextEditingController();
 
   // ── Selected state ──
   StateModel? _selectedState;
@@ -44,11 +46,13 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
     super.initState();
     _fetchStates();
     _searchCtrl.addListener(_onSearchChanged);
+    _stateSearchCtrl.addListener(_onStateSearchChanged);
   }
 
   @override
   void dispose() {
     _searchCtrl.dispose();
+    _stateSearchCtrl.dispose();
     super.dispose();
   }
 
@@ -58,6 +62,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
       if (mounted) {
         setState(() {
           _states = res;
+          _filteredStates = res;
           _loadingStates = false;
         });
       }
@@ -69,6 +74,15 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
         });
       }
     }
+  }
+
+  void _onStateSearchChanged() {
+    final q = _stateSearchCtrl.text.trim().toLowerCase();
+    setState(() {
+      _filteredStates = q.isEmpty
+          ? _states
+          : _states.where((s) => s.name.toLowerCase().contains(q)).toList();
+    });
   }
 
   Future<void> _onStateTap(StateModel state) async {
@@ -122,6 +136,7 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
       _filteredDistricts = [];
       _districtsError = null;
       _searchCtrl.clear();
+      _stateSearchCtrl.clear();
     });
   }
 
@@ -190,9 +205,10 @@ class _CityPickerSheetState extends State<_CityPickerSheet> {
               child: _selectedState == null
                   ? _StateList(
                       scrollCtrl: scrollCtrl,
-                      states: _states,
+                      states: _filteredStates,
                       loading: _loadingStates,
                       error: _statesError,
+                      searchCtrl: _stateSearchCtrl,
                       onRetry: _fetchStates,
                       onStateTap: _onStateTap,
                     )
@@ -220,6 +236,7 @@ class _StateList extends StatelessWidget {
   final List<StateModel> states;
   final bool loading;
   final String? error;
+  final TextEditingController searchCtrl;
   final VoidCallback onRetry;
   final ValueChanged<StateModel> onStateTap;
 
@@ -228,12 +245,56 @@ class _StateList extends StatelessWidget {
     required this.states,
     required this.loading,
     required this.error,
+    required this.searchCtrl,
     required this.onRetry,
     required this.onStateTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // ── Search field ──
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Container(
+            height: 46,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: TextField(
+              controller: searchCtrl,
+              style: const TextStyle(
+                  fontFamily: 'Jost', fontSize: 14, color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Search state...',
+                hintStyle: const TextStyle(
+                    fontFamily: 'Jost', fontSize: 14, color: Colors.white38),
+                prefixIcon: const Icon(Icons.search_rounded,
+                    color: Colors.white38, size: 20),
+                suffixIcon: searchCtrl.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.close_rounded,
+                            color: Colors.white38, size: 18),
+                        onPressed: searchCtrl.clear,
+                      )
+                    : null,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+          ),
+        ),
+
+        // ── Results ──
+        Expanded(child: _buildResults()),
+      ],
+    );
+  }
+
+  Widget _buildResults() {
     if (loading) {
       return const Center(
         child: CircularProgressIndicator(
@@ -252,6 +313,26 @@ class _StateList extends StatelessWidget {
               onPressed: onRetry,
               child: const Text('Retry',
                   style: TextStyle(color: AppColors.limeGreen)),
+            ),
+          ],
+        ),
+      );
+    }
+    if (states.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.search_off_rounded,
+                color: Colors.white12, size: 48),
+            const SizedBox(height: 12),
+            Text(
+              searchCtrl.text.isEmpty
+                  ? 'No states available'
+                  : 'No states found for "${searchCtrl.text}"',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                  fontFamily: 'Jost', fontSize: 14, color: Colors.white38),
             ),
           ],
         ),
