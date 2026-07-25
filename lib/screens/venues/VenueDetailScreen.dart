@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:bookplayz/api/api_constants.dart';
+import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/models/public_event_model.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
@@ -34,6 +36,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   int _currentImage = 0;
   int _activeCategory = -1;
   bool _aboutExpanded = false;
+  Timer? _imageAutoSlideTimer;
 
   List<VenueReview> _reviews = [];
   bool _reviewsLoading = false;
@@ -52,12 +55,31 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       ),
     );
     _fetch();
+    _imageAutoSlideTimer = Timer.periodic(
+      const Duration(seconds: 4),
+      (_) => _advanceImage(),
+    );
   }
 
   @override
   void dispose() {
+    _imageAutoSlideTimer?.cancel();
     _imageController.dispose();
     super.dispose();
+  }
+
+  void _advanceImage() {
+    final images = _venue?.images ?? const [];
+    if (images.length <= 1) return;
+    if (!_imageController.hasClients) return;
+    // Always move forward (never back to page 0) — the PageView is
+    // unbounded and indexes into `images` via `%`, so this loops
+    // seamlessly instead of sweeping backward on wraparound.
+    _imageController.animateToPage(
+      _currentImage + 1,
+      duration: const Duration(milliseconds: 450),
+      curve: Curves.easeInOut,
+    );
   }
 
   Future<void> _fetch() async {
@@ -109,6 +131,27 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
       if (mounted) setState(() => _events = events);
     } catch (_) {
       // Silent — the section simply doesn't render when there's nothing to show.
+    }
+  }
+
+  Future<void> _toggleFavorite(int venueId) async {
+    final current = Set<int>.from(SessionManager.instance.favoriteIds.value);
+    if (current.contains(venueId)) {
+      current.remove(venueId);
+    } else {
+      current.add(venueId);
+    }
+    SessionManager.instance.favoriteIds.value = current;
+    try {
+      await FavoritesApi.toggle(venueId);
+    } catch (_) {
+      final revert = Set<int>.from(SessionManager.instance.favoriteIds.value);
+      if (revert.contains(venueId)) {
+        revert.remove(venueId);
+      } else {
+        revert.add(venueId);
+      }
+      SessionManager.instance.favoriteIds.value = revert;
     }
   }
 
@@ -166,9 +209,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                             controller: _imageController,
                             onPageChanged: (i) =>
                                 setState(() => _currentImage = i),
-                            itemCount: imgList.length,
+                            // Unbounded (itemCount: null) — auto-slide just keeps
+                            // incrementing forever, indexing into imgList via `%`,
+                            // so looping never has to jump back to page 0
+                            // (which would sweep backward through every image).
                             itemBuilder: (_, i) => Image.network(
-                              imgList[i].imageUrl,
+                              imgList[i % imgList.length].imageUrl,
                               fit: BoxFit.cover,
                               errorBuilder: (_, err, st) => Image.asset(
                                 AppImages.dashboardCarousel,
@@ -204,7 +250,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: List.generate(imgList.length, (i) {
-                            final active = i == _currentImage;
+                            final active = i == _currentImage % imgList.length;
                             return AnimatedContainer(
                               duration: const Duration(milliseconds: 200),
                               margin: const EdgeInsets.symmetric(horizontal: 3),
@@ -238,15 +284,15 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     const SizedBox(height: 20),
                     _buildHeader(v),
                     const SizedBox(height: 16),
+                    _buildTimings(v),
+                    const SizedBox(height: 20),
+                    _buildLocation(v),
+                    const SizedBox(height: 20),
                     _buildCategories(v.categories),
                     const SizedBox(height: 20),
                     _buildAmenities(v.amenities),
                     const SizedBox(height: 20),
                     _buildAbout(v),
-                    const SizedBox(height: 20),
-                    _buildTimings(v),
-                    const SizedBox(height: 20),
-                    _buildLocation(v),
                     const SizedBox(height: 20),
                     _buildReviews(v),
                     const SizedBox(height: 20),
@@ -325,6 +371,31 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     ],
                   ),
                 ),
+              ),
+              const SizedBox(width: 8),
+              ValueListenableBuilder<Set<int>>(
+                valueListenable: SessionManager.instance.favoriteIds,
+                builder: (_, favIds, _) {
+                  final isFavorite = favIds.contains(v.id);
+                  return GestureDetector(
+                    onTap: () => _toggleFavorite(v.id),
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(
+                        isFavorite
+                            ? Icons.favorite_rounded
+                            : Icons.favorite_border_rounded,
+                        color: isFavorite ? Colors.red : Colors.white,
+                        size: 18,
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 8),
               GestureDetector(
@@ -775,6 +846,46 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
               ),
             ],
           ),
+          if (hasCoords) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () async {
+                final url = Uri.parse(
+                  'https://www.google.com/maps/dir/?api=1'
+                  '&destination=${v.latitude},${v.longitude}',
+                );
+                if (await canLaunchUrl(url)) launchUrl(url);
+              },
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.limeGreen.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppColors.limeGreen.withValues(alpha: 0.4),
+                  ),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.directions_rounded,
+                        color: AppColors.limeGreen, size: 18),
+                    SizedBox(width: 6),
+                    Text(
+                      'Get Directions',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.limeGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

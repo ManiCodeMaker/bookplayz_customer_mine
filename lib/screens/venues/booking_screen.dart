@@ -80,10 +80,39 @@ class _BookingScreenState extends State<BookingScreen> {
         venueId: widget.venue.id,
       );
       debugPrint('Subcategories loaded: ${list.length} for categoryId=${cat.id}');
-      if (mounted) setState(() { _subcategories = list; _subcatLoading = false; });
+      if (mounted) {
+        setState(() {
+          _subcategories = list;
+          _subcatLoading = false;
+          // Auto-select the first subcategory + first active ground, same
+          // as the first category is auto-selected on screen open, so
+          // slots are ready without extra taps.
+          if (list.isNotEmpty) _selectSubcategory(list.first);
+        });
+        if (_selectedGround != null) _loadAvailability();
+      }
     } catch (e) {
       debugPrint('Subcategories error: $e');
       if (mounted) setState(() => _subcatLoading = false);
+    }
+  }
+
+  // ── Select a subcategory + auto-expand its first active ground ──
+  // Called both when subcategories first load and when the user taps a
+  // different subcategory chip, so a ground is always expanded with slots
+  // ready rather than left collapsed.
+  void _selectSubcategory(BookingSubcategoryModel subcat) {
+    _selectedSubcat = subcat;
+    _selectedSlots = [];
+    final activeGrounds = subcat.grounds
+        .where((g) => g.status == 'Active' && g.vgsStatus == 'Active')
+        .toList();
+    if (activeGrounds.isNotEmpty) {
+      _selectedGround = activeGrounds.first;
+      _expandedGroundId = activeGrounds.first.id;
+    } else {
+      _selectedGround = null;
+      _expandedGroundId = null;
     }
   }
 
@@ -542,12 +571,9 @@ class _BookingScreenState extends State<BookingScreen> {
           final isSelected = _selectedSubcat?.id == subcat.id;
           return GestureDetector(
             onTap: () {
-              setState(() {
-                _selectedSubcat = subcat;
-                _selectedGround = null;
-                _expandedGroundId = null;
-                _selectedSlots = [];
-              });
+              if (_selectedSubcat?.id == subcat.id) return;
+              setState(() => _selectSubcategory(subcat));
+              if (_selectedGround != null) _loadAvailability();
             },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 200),

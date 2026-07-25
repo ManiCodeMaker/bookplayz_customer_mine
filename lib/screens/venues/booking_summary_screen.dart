@@ -340,7 +340,9 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _couponError = e.toString().replaceAll('Exception: ', '');
+          _couponError = e is ApiException
+              ? e.message
+              : e.toString().replaceAll('Exception: ', '');
           _couponLoading = false;
           _appliedCoupon = null;
         });
@@ -559,17 +561,6 @@ Widget _buildPaymentContent() {
 
       _buildCostBreakdown(),
 
-      const SizedBox(height: 20),
-
-      Divider(
-        color: Colors.white.withValues(alpha: 0.08),
-        height: 1,
-      ),
-
-      const SizedBox(height: 20),
-
-      _buildCouponSection(),
-
       const SizedBox(height: 140),
     ],
   );
@@ -671,15 +662,14 @@ Widget _buildPaymentContent() {
           _CostRow(
             label: 'Service Fee (${desc.venue.serviceFeeValue.toStringAsFixed(0)}%)',
             value: '₹${_serviceFee.toStringAsFixed(2)}'),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
         ],
-        if (_couponDiscount > 0) ...[
-          _CostRow(
-            label: 'Coupon (${_appliedCoupon!['code']})',
-            value: '− ₹${_couponDiscount.toStringAsFixed(2)}',
-            isDiscount: true),
-          const SizedBox(height: 12),
-        ],
+        // Coupon input/applied-chip lives here so the discount is applied
+        // before the total, rather than as an afterthought below it. When a
+        // coupon is applied, the chip itself shows the code + discount, so
+        // there's no separate "Coupon (CODE)" cost row to avoid repeating it.
+        _buildCouponSection(),
+        const SizedBox(height: 16),
         Divider(color: Colors.white.withValues(alpha: 0.08)),
         const SizedBox(height: 12),
         Row(
@@ -697,10 +687,10 @@ Widget _buildPaymentContent() {
     );
   }
 
+  // Nested inside _buildCostBreakdown()'s own horizontal padding — no
+  // padding of its own, or the inset would double up.
   Widget _buildCouponSection() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_appliedCoupon != null) ...[
@@ -787,8 +777,7 @@ Widget _buildPaymentContent() {
               ),
           ],
         ],
-      ),
-    );
+      );
   }
 
   Widget _buildPaymentBar() {
@@ -1079,9 +1068,7 @@ Widget _buildPaymentContent() {
 class _CostRow extends StatelessWidget {
   final String label;
   final String value;
-  final bool isDiscount;
-  const _CostRow({required this.label, required this.value,
-      this.isDiscount = false});
+  const _CostRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
@@ -1091,8 +1078,7 @@ class _CostRow extends StatelessWidget {
         Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 14,
             color: Colors.white.withValues(alpha: 0.75))),
         Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: isDiscount ? AppColors.limeGreen : Colors.white)),
+            fontWeight: FontWeight.w600, color: Colors.white)),
       ],
     );
   }
