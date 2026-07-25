@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../theme/app_constants.dart';
+import '../models/venue_review_model.dart';
 
 class ReviewCard extends StatelessWidget {
-  final Map<String, dynamic> review;
+  final NearbyTopReview review;
   final VoidCallback? onTap;
 
   const ReviewCard({
@@ -32,11 +34,16 @@ class ReviewCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Review image
-              Image.asset(
-                review['image'],
-                fit: BoxFit.cover,
-              ),
+              // Review image — falls back to a bundled asset if the venue
+              // has no image or the network image fails to load, and to a
+              // plain color as a last resort if even that asset is missing.
+              review.resolvedImage != null
+                  ? Image.network(
+                      review.resolvedImage!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => _fallbackImage(),
+                    )
+                  : _fallbackImage(),
 
               // Gradient overlay — stronger at bottom
               Container(
@@ -70,7 +77,7 @@ class ReviewCard extends StatelessWidget {
                           color: Colors.amber, size: 12),
                       const SizedBox(width: 3),
                       Text(
-                        review['rating']?.toString() ?? '4.5',
+                        review.rating.toStringAsFixed(1),
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 11,
@@ -92,7 +99,7 @@ class ReviewCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      review['comment'] ?? '',
+                      review.content,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -106,28 +113,25 @@ class ReviewCard extends StatelessWidget {
                     const SizedBox(height: 5),
                     Row(
                       children: [
-                        // Avatar
+                        // Avatar — initial letter, no avatar image from API
                         CircleAvatar(
                           radius: 10,
-                          backgroundImage: review['avatarAsset'] != null
-                              ? AssetImage(review['avatarAsset'])
-                              : null,
                           backgroundColor:
                               AppColors.limeGreen.withValues(alpha: 0.4),
-                          child: review['avatarAsset'] == null
-                              ? Text(
-                                  (review['reviewer'] as String? ?? 'U')[0],
-                                  style: const TextStyle(
-                                      fontSize: 9,
-                                      color: AppColors.navyBlue,
-                                      fontWeight: FontWeight.w700),
-                                )
-                              : null,
+                          child: Text(
+                            review.userName.isNotEmpty
+                                ? review.userName[0].toUpperCase()
+                                : 'U',
+                            style: const TextStyle(
+                                fontSize: 9,
+                                color: AppColors.navyBlue,
+                                fontWeight: FontWeight.w700),
+                          ),
                         ),
                         const SizedBox(width: 6),
                         Expanded(
                           child: Text(
-                            '${review['reviewer'] ?? ''} · ${review['time'] ?? ''}',
+                            '${review.userName} · ${review.venueName}',
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontFamily: 'Inter',
@@ -145,6 +149,14 @@ class ReviewCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _fallbackImage() {
+    return Image.asset(
+      AppImages.dashboardCarousel,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Container(color: AppColors.navyBlue),
     );
   }
 }

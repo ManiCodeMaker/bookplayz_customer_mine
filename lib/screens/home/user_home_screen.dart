@@ -3,6 +3,7 @@ import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/promo_banner_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
+import 'package:bookplayz/models/venue_review_model.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/empty_venue_state.dart';
 import 'package:bookplayz/widgets/invite_friend_banner.dart';
@@ -94,29 +95,8 @@ Future<void> _toggleFavorite(int venueId) async {
   ];
 
   // ── Reviews ──
-  final List<Map<String, dynamic>> _reviews = [
-    {
-      'image': AppImages.venueHero,
-      'rating': '41.6k',
-      'comment': 'We have enjoyed the play. Ground is WOW...',
-      'reviewer': 'Dianne',
-      'time': '5m',
-    },
-    {
-      'image': AppImages.venueHero,
-      'rating': '41.6k',
-      'comment': 'Well maintained and good.',
-      'reviewer': 'Dianne',
-      'time': '5m',
-    },
-    {
-      'image': AppImages.venueHero,
-      'rating': '41.6k',
-      'comment': 'We will come again. Nice place to play here.',
-      'reviewer': 'Dianne',
-      'time': '5m',
-    },
-  ];
+  List<NearbyTopReview> _reviews = [];
+  bool _reviewsLoading = true;
 
   @override
   void initState() {
@@ -126,10 +106,51 @@ Future<void> _toggleFavorite(int venueId) async {
       statusBarIconBrightness: Brightness.light,
     ));
     _loadVenues();
+    _loadReviews();
     SessionManager.instance.cityNotifier.addListener(_onCityChanged);
   }
 
-  void _onCityChanged() => _loadVenues();
+  void _onCityChanged() {
+    _loadVenues();
+    _loadReviews();
+  }
+
+  Future<void> _loadReviews() async {
+    final lat = SessionManager.instance.latitude;
+    final lng = SessionManager.instance.longitude;
+    if (lat == null || lng == null) {
+      setState(() {
+        _reviewsLoading = false;
+        _reviews = [];
+      });
+      return;
+    }
+    setState(() => _reviewsLoading = true);
+    try {
+      final reviews = await ReviewApi.fetchNearbyTop(
+        latitude: lat,
+        longitude: lng,
+        limit: 10,
+      );
+      debugPrint('Nearby reviews loaded: ${reviews.length}');
+      for (final r in reviews) {
+        debugPrint('  reviewId=${r.reviewId} venue=${r.venueName} '
+            'rating=${r.rating} primaryImage=${r.primaryImage} '
+            'resolvedImage=${r.resolvedImage}');
+      }
+      if (!mounted) return;
+      setState(() {
+        _reviews = reviews;
+        _reviewsLoading = false;
+      });
+    } catch (e) {
+      // Non-critical decorative section — log and just hide it, same as
+      // VenueDetailScreen's events section does on failure.
+      debugPrint('Nearby reviews error: $e');
+      if (!mounted) return;
+      setState(() => _reviewsLoading = false);
+    }
+  }
 
   Future<void> _loadVenues() async {
     final lat = SessionManager.instance.latitude;
@@ -348,24 +369,33 @@ Future<void> _toggleFavorite(int venueId) async {
           ),
 
           // ── Reviews section ──
-          SliverToBoxAdapter(
-            child: _SectionHeader(
-              title: 'Reviews',
-              onSeeAll: () {},
-            ),
-          ),
-          SliverToBoxAdapter(
-            child: SizedBox(
-              height: 160,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _reviews.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
-                itemBuilder: (_, i) => ReviewCard(review: _reviews[i]),
+          if (_reviewsLoading)
+            const SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(child: AppLoader()),
+              ),
+            )
+          else if (_reviews.isNotEmpty) ...[
+            SliverToBoxAdapter(
+              child: _SectionHeader(
+                title: 'Reviews',
+                onSeeAll: () {},
               ),
             ),
-          ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 160,
+                child: ListView.separated(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: _reviews.length,
+                  separatorBuilder: (_, _) => const SizedBox(width: 12),
+                  itemBuilder: (_, i) => ReviewCard(review: _reviews[i]),
+                ),
+              ),
+            ),
+          ],
 
           // ── Invite Friends banner ──
           // SliverToBoxAdapter(

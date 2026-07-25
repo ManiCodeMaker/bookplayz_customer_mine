@@ -514,6 +514,31 @@ class ReviewApi {
         VenueReviewMeta.fromJson(res['meta'] as Map<String, dynamic>);
     return (reviews: reviews, meta: meta);
   }
+
+  static String nearbyTop({
+    required double latitude,
+    required double longitude,
+    double radius = 50,
+    int page = 1,
+    int limit = 10,
+  }) =>
+      '${ApiConstants.baseUrl}/reviews/nearby/top'
+      '?latitude=$latitude&longitude=$longitude&radius=$radius'
+      '&page=$page&limit=$limit';
+
+  static Future<List<NearbyTopReview>> fetchNearbyTop({
+    required double latitude,
+    required double longitude,
+    double radius = 50,
+    int limit = 10,
+  }) async {
+    final res = await ApiService.instance.get(
+      nearbyTop(latitude: latitude, longitude: longitude, radius: radius, limit: limit),
+    );
+    return (res['data'] as List<dynamic>)
+        .map((e) => NearbyTopReview.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
 }
 
 // ── Booking Detail ─────────────────────────────────────────────────────────────

@@ -35,6 +35,59 @@ class VenueReview {
   }
 }
 
+// ── Top review per nearby venue (GET /reviews/nearby/top) ──
+class NearbyTopReview {
+  final int reviewId;
+  final double rating;
+  final String content;
+  final int helpfulCount;
+  final String userName;
+  final String? groundName;
+  final double distance;
+  final int venueId;
+  final String venueName;
+  final String? primaryImage;
+
+  const NearbyTopReview({
+    required this.reviewId,
+    required this.rating,
+    required this.content,
+    required this.helpfulCount,
+    required this.userName,
+    this.groundName,
+    required this.distance,
+    required this.venueId,
+    required this.venueName,
+    this.primaryImage,
+  });
+
+  /// Some backends return relative upload paths — resolve against the API
+  /// host (minus the trailing /api), same as elsewhere in the app.
+  String? get resolvedImage {
+    final url = primaryImage;
+    if (url == null || url.isEmpty) return null;
+    if (url.startsWith('http')) return url;
+    const apiBase = 'https://api.bookplayz.com/api';
+    final serverBase = apiBase.replaceFirst(RegExp(r'/api$'), '');
+    return '$serverBase$url';
+  }
+
+  factory NearbyTopReview.fromJson(Map<String, dynamic> j) {
+    return NearbyTopReview(
+      reviewId:     j['reviewId'] as int? ?? 0,
+      rating:       double.tryParse(j['rating']?.toString() ?? '0') ?? 0.0,
+      content:      j['content'] as String? ?? '',
+      helpfulCount: j['helpfulCount'] as int? ?? 0,
+      userName:     j['userName'] as String? ?? 'User',
+      groundName:   j['groundName'] as String?,
+      distance:     double.tryParse(j['distance']?.toString() ?? '0') ?? 0.0,
+      venueId:      j['venueId'] as int? ?? 0,
+      venueName:    j['venueName'] as String? ?? '',
+      primaryImage: j['primaryImage'] as String?,
+    );
+  }
+}
+
 class VenueReviewMeta {
   final int page;
   final int limit;
