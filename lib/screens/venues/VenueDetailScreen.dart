@@ -44,6 +44,12 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
 
   List<PublicEventModel> _events = [];
 
+  // Fades in the fixed top-bar backdrop as the hero image scrolls away, so
+  // the back/share/bulk buttons get a solid, shadowed bar behind them once
+  // the content card is what's actually behind them (0 = over the image,
+  // fully transparent; 1 = fully opaque with a shadow).
+  double _topBarProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -186,8 +192,19 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     return Stack(
       children: [
         // ── Scrollable ──
-        CustomScrollView(
-          slivers: [
+        NotificationListener<ScrollNotification>(
+          onNotification: (n) {
+            if (n.metrics.axis != Axis.vertical) return false;
+            // Fully faded in by ~150px of scroll — well before the hero
+            // image (topPad + 232 tall) has scrolled out of view.
+            final progress = (n.metrics.pixels / 150).clamp(0.0, 1.0);
+            if (progress != _topBarProgress) {
+              setState(() => _topBarProgress = progress);
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
             // ── Hero — collapses on scroll ──
             SliverAppBar(
               automaticallyImplyLeading: false,
@@ -309,7 +326,33 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                 ),
               ),
             ),
-          ],
+            ],
+          ),
+        ),
+
+        // ── Fixed top-bar backdrop — keeps back/share/bulk buttons legible
+        // once the hero image scrolls away and the content card is right
+        // behind them; these buttons live outside the CustomScrollView so
+        // they'd otherwise sit with nothing behind them once scrolled.
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: topPad + 60,
+          child: IgnorePointer(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppColors.navyBlue.withValues(alpha: _topBarProgress),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.25 * _topBarProgress),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
 
         // ── Back button — always fixed ──
