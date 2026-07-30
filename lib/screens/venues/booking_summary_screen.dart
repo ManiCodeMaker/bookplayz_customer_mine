@@ -683,7 +683,164 @@ Widget _buildPaymentContent() {
                     fontWeight: FontWeight.w700, color: AppColors.limeGreen)),
           ],
         ),
+        const SizedBox(height: 16),
+        Center(
+          child: GestureDetector(
+            onTap: () => _showCancellationPolicy(context),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.info_outline_rounded,
+                    color: AppColors.limeGreen.withValues(alpha: 0.85), size: 14),
+                const SizedBox(width: 6),
+                Text(
+                  'Cancellation & Refund Policy',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.limeGreen,
+                    decoration: TextDecoration.underline,
+                    decorationColor: AppColors.limeGreen.withValues(alpha: 0.5),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ]),
+    );
+  }
+
+  // ── Cancellation & Refund Policy bottom sheet ──
+  void _showCancellationPolicy(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.75,
+        minChildSize: 0.4,
+        maxChildSize: 0.92,
+        expand: false,
+        builder: (ctx, scrollController) => Container(
+          decoration: const BoxDecoration(
+            color: AppColors.navyBlue,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            children: [
+              const SizedBox(height: 12),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 12, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Cancellation & Refund Policy',
+                      style: TextStyle(
+                        fontFamily: 'Jost',
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.white,
+                      ),
+                    ),
+                    GestureDetector(
+                      onTap: () => Navigator.pop(ctx),
+                      child: Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.08),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.close_rounded,
+                            color: Colors.white, size: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Expanded(
+                child: SingleChildScrollView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Users may cancel their booking and request a refund '
+                        'in accordance with the following policy:',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 13,
+                          height: 1.5,
+                          color: Colors.white.withValues(alpha: 0.75),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const _PolicyTier(
+                        icon: Icons.check_circle_rounded,
+                        color: AppColors.limeGreen,
+                        title: 'More than 24 hours before booking time',
+                        body: 'The full booking amount will be refunded.',
+                        footnote:
+                            'Service charges, convenience fees, payment gateway '
+                            'charges, and any other applicable processing fees '
+                            'are non-refundable.',
+                      ),
+                      const SizedBox(height: 14),
+                      _PolicyTier(
+                        icon: Icons.remove_circle_rounded,
+                        color: Colors.amber.shade600,
+                        title: '24 hours to 3 hours before booking time',
+                        body: '15% of the booking amount will be deducted as a '
+                            'cancellation fee, and the remaining 85% will be '
+                            'refunded.',
+                        footnote:
+                            'Service charges, convenience fees, payment gateway '
+                            'charges, and any other applicable processing fees '
+                            'are non-refundable.',
+                      ),
+                      const SizedBox(height: 14),
+                      _PolicyTier(
+                        icon: Icons.cancel_rounded,
+                        color: Colors.red.shade300,
+                        title: 'Within 3 hours of, or after, booking start time',
+                        body: 'No refund will be provided.',
+                      ),
+                      const SizedBox(height: 20),
+                      Divider(color: Colors.white.withValues(alpha: 0.08)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Approved refunds will be processed to the original '
+                        'payment method used for the booking. Refunds are '
+                        'generally credited within 7–14 business days, subject '
+                        'to the processing time of the respective bank or '
+                        'payment provider.',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          height: 1.6,
+                          color: Colors.white.withValues(alpha: 0.55),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -1080,6 +1237,71 @@ class _CostRow extends StatelessWidget {
         Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14,
             fontWeight: FontWeight.w600, color: Colors.white)),
       ],
+    );
+  }
+}
+
+class _PolicyTier extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String body;
+  final String? footnote;
+
+  const _PolicyTier({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.body,
+    this.footnote,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                    style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: color)),
+                const SizedBox(height: 4),
+                Text(body,
+                    style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12.5,
+                        height: 1.5,
+                        color: Colors.white.withValues(alpha: 0.85))),
+                if (footnote != null) ...[
+                  const SizedBox(height: 6),
+                  Text(footnote!,
+                      style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 11,
+                          height: 1.5,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white.withValues(alpha: 0.45))),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

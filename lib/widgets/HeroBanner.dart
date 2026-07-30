@@ -167,7 +167,7 @@ class _HeroBannerState extends State<HeroBanner> {
   // minH is dynamic: status-bar safe area + TopBar's own padding (20) + icon row (40).
   double _computeHeight(BuildContext context) {
     if (widget.showCarousel) {
-      double maxH = 260;
+      double maxH = 300;
       if (widget.promoOverlay != null) maxH += 80;
       final double minH = MediaQuery.of(context).padding.top + 90;
       return maxH + (minH - maxH) * widget.scrollProgress;
@@ -329,20 +329,44 @@ class _HeroBannerState extends State<HeroBanner> {
 
   Widget _buildOverlay() {
     if (widget.showCarousel) {
-      // Deep navy gradient for the carousel (legible top-bar + space for promo).
+      // Deep navy gradient for the carousel (legible bottom text/dots),
+      // plus a dedicated top scrim so the top-bar (avatar/search/location/
+      // notification) stays readable over bright carousel images.
       return IgnorePointer(
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                Colors.black.withValues(alpha: 0.15),
-                AppColors.navyBlue.withValues(alpha: 0.85),
-              ],
-              stops: const [0.3, 1.0],
+        child: Stack(
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withValues(alpha: 0.15),
+                    AppColors.navyBlue.withValues(alpha: 0.85),
+                  ],
+                  stops: const [0.3, 1.0],
+                ),
+              ),
             ),
-          ),
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 120,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Colors.black.withValues(alpha: 0.55),
+                      Colors.black.withValues(alpha: 0.0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       );
     }
