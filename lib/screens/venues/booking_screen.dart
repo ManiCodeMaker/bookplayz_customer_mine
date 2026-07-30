@@ -44,6 +44,12 @@ class _BookingScreenState extends State<BookingScreen> {
   bool _availabilityLoading = false;
   List<String> _selectedSlots = []; // ["08:00", "09:00"]
 
+  // Fades in the fixed top-bar backdrop as the hero image scrolls away, so
+  // the back button gets a solid, shadowed bar behind it once the content
+  // card is what's actually behind it (0 = over the image, fully
+  // transparent; 1 = fully opaque with a shadow).
+  double _topBarProgress = 0.0;
+
   @override
   void initState() {
     super.initState();
@@ -282,8 +288,19 @@ class _BookingScreenState extends State<BookingScreen> {
       body: Stack(
         children: [
           // ── Scrollable body ──
-          CustomScrollView(
-            slivers: [
+          NotificationListener<ScrollNotification>(
+            onNotification: (n) {
+              if (n.metrics.axis != Axis.vertical) return false;
+              // Fully faded in by ~150px of scroll — well before the hero
+              // image (topPad + 180 tall) has scrolled out of view.
+              final progress = (n.metrics.pixels / 150).clamp(0.0, 1.0);
+              if (progress != _topBarProgress) {
+                setState(() => _topBarProgress = progress);
+              }
+              return false;
+            },
+            child: CustomScrollView(
+              slivers: [
               // ── Hero image — pinned, doesn't scroll ──
               SliverAppBar(
                 automaticallyImplyLeading: false,
@@ -352,6 +369,32 @@ class _BookingScreenState extends State<BookingScreen> {
                 ),
               ),
             ],
+            ),
+          ),
+
+          // ── Fixed top-bar backdrop — keeps the back button legible once
+          // the hero image scrolls away and the content card is right
+          // behind it; the button lives outside the CustomScrollView so
+          // it'd otherwise sit with nothing behind it once scrolled.
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: topPad + 60,
+            child: IgnorePointer(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: AppColors.navyBlue.withValues(alpha: _topBarProgress),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25 * _topBarProgress),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
 
           // ── Back button — always on top ──

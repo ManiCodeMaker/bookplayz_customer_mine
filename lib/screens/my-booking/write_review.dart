@@ -389,7 +389,7 @@ class _WriteReviewSheetState extends State<WriteReviewSheet> {
                     ? const Center(
                         child: Padding(
                           padding: EdgeInsets.all(40),
-                          child: AppLoader(),
+                          child: AppLoader(color: AppLoaderColor.black),
                         ),
                       )
                     : SingleChildScrollView(
@@ -539,7 +539,10 @@ class _WriteReviewSheetState extends State<WriteReviewSheet> {
                                           vertical: 14),
                                     ),
                                     child: _submitting
-                                        ? const AppLoader(size: 18)
+                                        ? const AppLoader(
+                                            size: 18,
+                                            color: AppLoaderColor.black,
+                                          )
                                         : Text(
                                             _isEdit
                                                 ? 'Update Review'

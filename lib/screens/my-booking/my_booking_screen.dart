@@ -227,7 +227,9 @@ class _BookingHomeState extends State<_BookingHome> {
                       backgroundColor: AppColors.navyBlue,
                       onRefresh: () async => widget.onRefresh?.call(),
                       child: widget.loading
-                          ? const Center(child: AppLoader())
+                          ? const Center(
+                              child: AppLoader(color: AppLoaderColor.black),
+                            )
                           : widget.loadError != null
                               ? ListView(
                                   physics: const AlwaysScrollableScrollPhysics(),
@@ -483,7 +485,12 @@ class _BookingCardState extends State<_BookingCard> {
                                     width: 120,
                                     color: AppColors.navyBlue
                                         .withValues(alpha: 0.3),
-                                    child: const Center(child: AppLoader(size: 60)),
+                                    child: const Center(
+                                      child: AppLoader(
+                                        size: 60,
+                                        color: AppLoaderColor.black,
+                                      ),
+                                    ),
                                   ),
                       )
                     : const _NoImagePlaceholder(),

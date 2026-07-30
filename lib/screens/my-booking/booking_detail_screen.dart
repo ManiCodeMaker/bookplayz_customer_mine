@@ -209,7 +209,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: _loading
-                  ? const Center(child: AppLoader())
+                  ? const Center(
+                      child: AppLoader(color: AppLoaderColor.black),
+                    )
                   : _error != null
                       ? _buildError()
                       : _buildBody(),
