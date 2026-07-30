@@ -5,6 +5,7 @@ import 'package:bookplayz/models/booking_model.dart';
 import 'package:bookplayz/models/venue_review_model.dart';
 import 'package:bookplayz/models/tournament_model.dart';
 import 'package:bookplayz/models/public_event_model.dart';
+import 'package:bookplayz/models/page_image_model.dart';
 
 import 'api_service.dart';
 import '../models/venue_model.dart';
@@ -627,6 +628,26 @@ class EnquiryApi {
         'eventId':      eventId,
       },
     );
+  }
+}
+
+// ── Page Images ───────────────────────────────────────────────────────────────
+class PageImagesApi {
+  PageImagesApi._();
+
+  /// GET /page-images?pageType=... — public, no auth required.
+  /// [pageType] is the page type's slug (e.g. "user-app-splash-screen", "home").
+  static Future<List<PageImageModel>> byPageType(String pageType) async {
+    final res = await ApiService.instance.get(
+      '${ApiConstants.baseUrl}/page-images'
+      '?pageType=$pageType&status=Active&limit=50',
+    );
+    final list = res['data'] as List<dynamic>? ?? [];
+    final images = list
+        .map((e) => PageImageModel.fromJson(e as Map<String, dynamic>))
+        .toList();
+    images.sort((a, b) => a.sortOrder.compareTo(b.sortOrder));
+    return images;
   }
 }
 

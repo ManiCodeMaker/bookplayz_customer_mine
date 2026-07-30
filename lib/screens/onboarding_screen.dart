@@ -3,9 +3,14 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../api/api_constants.dart';
 import '../models/onboarding_data.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_constants.dart';
+
+/// pageType slug (superadmin "User App Splash Screen") that backs this
+/// screen's slide images.
+const String _onboardingPageType = 'user-app-splash-screen';
 
 
 class OnboardingScreen extends StatefulWidget {
@@ -24,6 +29,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Animation<Offset>? _textSlideAnim;
   Animation<double>? _textFadeAnim;
   final TapGestureRecognizer _venueRegTap = TapGestureRecognizer();
+
+  // Network slide images keyed by index, matched 1:1 against
+  // [onboardingPages]. Falls back to the local asset until/unless loaded.
+  List<String>? _networkImages;
 
   @override
   void initState() {
@@ -44,6 +53,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _textController?.forward();
       });
+
+    _loadImages();
+  }
+
+  Future<void> _loadImages() async {
+    try {
+      final images = await PageImagesApi.byPageType(_onboardingPageType);
+      if (!mounted || images.length != onboardingPages.length) return;
+      setState(() {
+        _networkImages = images.map((e) => e.imageUrl).toList();
+      });
+    } catch (e) {
+      debugPrint('Onboarding page images fetch failed, using local assets: $e');
+    }
   }
 
   void _initTextAnimation({required bool fromRight}) {
@@ -153,6 +176,24 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 physics: const NeverScrollableScrollPhysics(), // ← PageView itself locked
                 itemCount: onboardingPages.length,
                 itemBuilder: (context, index) {
+                  final networkUrl = _networkImages?[index];
+                  if (networkUrl != null) {
+                    return Image.network(
+                      networkUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return Image.asset(
+                          onboardingPages[index].image,
+                          fit: BoxFit.cover,
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Image.asset(
+                        onboardingPages[index].image,
+                        fit: BoxFit.cover,
+                      ),
+                    );
+                  }
                   return Image.asset(
                     onboardingPages[index].image,
                     fit: BoxFit.cover,
