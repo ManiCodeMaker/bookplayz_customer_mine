@@ -6,9 +6,9 @@ import 'package:bookplayz/screens/venues/booking_summary_screen.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
+import 'package:bookplayz/widgets/venue_filters.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 class BookingScreen extends StatefulWidget {
   final VenueDetailModel venue;
@@ -447,116 +447,20 @@ class _BookingScreenState extends State<BookingScreen> {
     );
   }
 
-  // ── Category tabs ──
+  // ── Category tabs — same SportFilterRow used on VenueDetailScreen, so
+  // the sport icon buttons look identical across both screens.
   Widget _buildCategoryTabs() {
     final cats = widget.venue.categories;
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SizedBox(
-          height: 96,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            itemCount: cats.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 12),
-            itemBuilder: (_, i) {
-              final cat = cats[i];
-              final isActive = i == _selectedCategoryIndex;
-              return GestureDetector(
-                onTap: () {
-                  if (_selectedCategoryIndex == i) return;
-                  setState(() => _selectedCategoryIndex = i);
-                  _loadSubcategories(cat);
-                },
-                child: Column(
-                  children: [
-                    Stack(
-                      children: [
-                        AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            color: isActive
-                                ? AppColors.limeGreen
-                                : AppColors.white,
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          // 4 px padding acts as the white ring — no border
-                          // needed, so the inner shadow isn't hidden by it.
-                          padding: isActive
-                              ? const EdgeInsets.all(14)
-                              : const EdgeInsets.all(4),
-                          child: isActive
-                              ? (cat.image != null
-                                  ? _buildCatIcon(cat.image!, isActive)
-                                  : Icon(Icons.sports,
-                                      color: Colors.white, size: 28))
-                              : Container(
-                                  decoration: BoxDecoration(
-                                    color: AppColors.white,
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding: const EdgeInsets.all(10),
-                                  child: cat.image != null
-                                      ? _buildCatIcon(cat.image!, isActive)
-                                      : Icon(Icons.sports,
-                                          color: Colors.white
-                                              .withValues(alpha: 0.7),
-                                          size: 28),
-                                ),
-                        ),
-                        if (!isActive)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: CustomPaint(
-                                painter: const _CategoryTabInnerShadow(),
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      cat.name.toUpperCase(),
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 9,
-                        fontWeight: FontWeight.w700,
-                        color: isActive
-                            ? AppColors.limeGreen
-                            : Colors.white.withValues(alpha: 0.6),
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCatIcon(String url, bool isActive) {
-    final isSvg =
-        url.toLowerCase().endsWith('.svg') || url.contains('.svg');
-    final color = isActive ? Colors.white : AppColors.navyBlue;
-    if (isSvg) {
-      return SvgPicture.network(
-        url,
-        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        placeholderBuilder: (_) => const SizedBox(),
-      );
-    }
-    return Image.network(
-      url,
-      fit: BoxFit.contain,
-      color: color,
-      colorBlendMode: BlendMode.srcIn,
-      errorBuilder: (_, __, ___) =>
-          Icon(Icons.sports, color: color, size: 28),
+    final sports =
+        cats.map((c) => {'label': c.name, 'icon': c.image ?? ''}).toList();
+    return SportFilterRow(
+      sports: sports,
+      activeIndex: _selectedCategoryIndex,
+      onChanged: (i) {
+        if (_selectedCategoryIndex == i) return;
+        setState(() => _selectedCategoryIndex = i);
+        _loadSubcategories(cats[i]);
+      },
     );
   }
 
@@ -1147,44 +1051,4 @@ class _Legend extends StatelessWidget {
       ],
     );
   }
-}
-
-class _CategoryTabInnerShadow extends CustomPainter {
-  const _CategoryTabInnerShadow();
-
-  static const double _r = 8;
-  static const double _b = 7;
-  static const Color _c = Color.fromARGB(205, 0, 0, 0);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      const Radius.circular(_r),
-    );
-
-    // Clip to the rounded rect — each shadow rect sits just outside the
-    // boundary so only the inward-bleeding blur is visible, keeping the
-    // centre white.
-    canvas.save();
-    canvas.clipRRect(rrect);
-
-    final paint = Paint()
-      ..color = _c
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, _b);
-
-    final w = size.width;
-    final h = size.height;
-    const b = _b;
-
-    canvas.drawRect(Rect.fromLTWH(-b, -b * 2, w + b * 2, b * 2), paint);
-    canvas.drawRect(Rect.fromLTWH(-b, h, w + b * 2, b * 2), paint);
-    canvas.drawRect(Rect.fromLTWH(-b * 2, -b, b * 2, h + b * 2), paint);
-    canvas.drawRect(Rect.fromLTWH(w, -b, b * 2, h + b * 2), paint);
-
-    canvas.restore();
-  }
-
-  @override
-  bool shouldRepaint(_CategoryTabInnerShadow old) => false;
 }
