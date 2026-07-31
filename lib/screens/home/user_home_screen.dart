@@ -26,7 +26,7 @@ class UserHomeScreen extends StatefulWidget {
 }
 
 class _UserHomeScreenState extends State<UserHomeScreen> {
-  int _activeSport = 0;
+  int? _activeSport;
   final ScrollController _scrollController = ScrollController();
 
   final List<Map<String, String>> _sports = [
@@ -377,11 +377,8 @@ Future<void> _toggleFavorite(int venueId) async {
               ),
             )
           else if (_reviews.isNotEmpty) ...[
-            SliverToBoxAdapter(
-              child: _SectionHeader(
-                title: 'Reviews',
-                onSeeAll: () {},
-              ),
+            const SliverToBoxAdapter(
+              child: _SectionHeader(title: 'Reviews'),
             ),
             SliverToBoxAdapter(
               child: SizedBox(
@@ -391,7 +388,14 @@ Future<void> _toggleFavorite(int venueId) async {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   itemCount: _reviews.length,
                   separatorBuilder: (_, _) => const SizedBox(width: 12),
-                  itemBuilder: (_, i) => ReviewCard(review: _reviews[i]),
+                  itemBuilder: (_, i) => ReviewCard(
+                    review: _reviews[i],
+                    onTap: () => Navigator.pushNamed(
+                      context,
+                      AppRoutes.venueDetail,
+                      arguments: _reviews[i].venueSlug,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -534,39 +538,21 @@ class _StatCard extends StatelessWidget {
 // ── Section Header ────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String title;
-  final VoidCallback? onSeeAll;
 
-  const _SectionHeader({required this.title, this.onSeeAll});
+  const _SectionHeader({required this.title});
 
   @override
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            title,
-            style: const TextStyle(
-              fontFamily: 'Jost',
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: AppColors.white,
-            ),
-          ),
-          GestureDetector(
-            onTap: onSeeAll,
-            child: const Text(
-              'See All',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.limeGreen,
-              ),
-            ),
-          ),
-        ],
+      child: Text(
+        title,
+        style: const TextStyle(
+          fontFamily: 'Jost',
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          color: AppColors.white,
+        ),
       ),
     );
   }

@@ -46,6 +46,7 @@ class NearbyTopReview {
   final double distance;
   final int venueId;
   final String venueName;
+  final String venueSlug;
   final String? primaryImage;
 
   const NearbyTopReview({
@@ -58,6 +59,7 @@ class NearbyTopReview {
     required this.distance,
     required this.venueId,
     required this.venueName,
+    required this.venueSlug,
     this.primaryImage,
   });
 
@@ -83,6 +85,7 @@ class NearbyTopReview {
       distance:     double.tryParse(j['distance']?.toString() ?? '0') ?? 0.0,
       venueId:      j['venueId'] as int? ?? 0,
       venueName:    j['venueName'] as String? ?? '',
+      venueSlug:    j['slug'] as String? ?? '',
       primaryImage: j['primaryImage'] as String?,
     );
   }

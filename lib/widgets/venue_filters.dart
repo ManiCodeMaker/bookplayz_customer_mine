@@ -6,7 +6,7 @@ import 'app_loader.dart';
 // ── Sport Filter Chips Row ────────────────────────────────
 class SportFilterRow extends StatelessWidget {
   final List<Map<String, String>> sports;
-  final int activeIndex;
+  final int? activeIndex;
   final ValueChanged<int> onChanged;
 
   const SportFilterRow({
