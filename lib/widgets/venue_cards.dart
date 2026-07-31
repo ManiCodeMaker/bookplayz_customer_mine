@@ -55,6 +55,12 @@ class VenueCard extends StatelessWidget {
     return '${d.toStringAsFixed(1)} km';
   }
 
+  String get _priceLabel {
+    final p = venue.price;
+    if (p == null) return 'Price on request';
+    return '₹${p.toStringAsFixed(0)}/hr';
+  }
+
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -241,7 +247,7 @@ class VenueCard extends StatelessWidget {
                         ),
                       ),
                       Text(
-                        'Price ₹550–₹850',
+                        _priceLabel,
                         style: TextStyle(
                           fontFamily: 'Inter',
                           fontSize: 12,

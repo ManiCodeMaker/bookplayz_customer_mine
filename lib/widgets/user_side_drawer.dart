@@ -202,7 +202,7 @@ class UserSideDrawer extends StatelessWidget {
                                   color: AppColors.limeGreen, size: 18),
                               const SizedBox(width: 6),
                               const Text(
-                                '+91 98765 98765',
+                                '+91 81899 88221',
                                 style: TextStyle(
                                   fontFamily: 'Jost',
                                   fontSize: 15,

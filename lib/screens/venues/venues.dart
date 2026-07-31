@@ -273,7 +273,20 @@ class VenuesScreenState extends State<VenuesScreen> {
     // Sort
     switch (_sortType) {
       case VenueSortType.priceAsc:
+        list.sort((a, b) {
+          if (a.price == null && b.price == null) return 0;
+          if (a.price == null) return 1;
+          if (b.price == null) return -1;
+          return a.price!.compareTo(b.price!);
+        });
+        break;
       case VenueSortType.priceDesc:
+        list.sort((a, b) {
+          if (a.price == null && b.price == null) return 0;
+          if (a.price == null) return 1;
+          if (b.price == null) return -1;
+          return b.price!.compareTo(a.price!);
+        });
         break;
       case VenueSortType.distanceAsc:
         list.sort((a, b) => (a.distance ?? 999).compareTo(b.distance ?? 999));

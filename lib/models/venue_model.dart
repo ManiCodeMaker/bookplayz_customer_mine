@@ -31,6 +31,7 @@ class VenueModel {
   final List<VenueSubcategoryModel> subcategories;
   final List<VenueImageModel> images;
   final double? distance;
+  final double? price;
 
   const VenueModel({
     required this.id,
@@ -50,6 +51,7 @@ class VenueModel {
     required this.subcategories,
     required this.images,
     this.distance,
+    this.price,
   });
 
   factory VenueModel.fromJson(Map<String, dynamic> j) => VenueModel(
@@ -80,6 +82,7 @@ class VenueModel {
             (j['latitude'] as num?)?.toDouble(),
             (j['longitude'] as num?)?.toDouble(),
           ),
+        price: double.tryParse(j['price']?.toString() ?? ''),
       );
 }
 
