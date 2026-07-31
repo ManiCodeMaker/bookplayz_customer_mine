@@ -96,12 +96,73 @@ class _UserShellScreenState extends State<UserShellScreen>
   }
 
   Future<void> _onLogout() async {
+    final confirmed = await _showLogoutConfirmDialog();
+    if (confirmed != true) return;
+
     _closeDrawer();
     await Future.delayed(const Duration(milliseconds: 300));
     await SessionManager.instance.clearSession();
     if (mounted) {
       Navigator.pushNamedAndRemoveUntil(context, AppRoutes.signin, (r) => false);
     }
+  }
+
+  Future<bool?> _showLogoutConfirmDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Log Out',
+          style: TextStyle(
+            fontFamily: 'Jost',
+            fontWeight: FontWeight.w700,
+            fontSize: 17,
+            color: Color(0xFF0A2540),
+          ),
+        ),
+        content: const Text(
+          'Are you sure you want to log out?',
+          style: TextStyle(
+            fontFamily: 'Inter',
+            fontSize: 13,
+            height: 1.5,
+            color: Colors.black87,
+          ),
+        ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w600,
+                color: Colors.black54,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text(
+              'Log Out',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _onHomeSportSelected(String sportName) {
