@@ -170,7 +170,9 @@ class UserSideDrawer extends StatelessWidget {
                             icon: Icons.logout_rounded,
                             label: 'Log Out',
                             isDestructive: true,
-                            onTap: () { onClose(); onLogout(); },
+                            // Confirmation happens inside onLogout — the
+                            // drawer is closed only if the user confirms.
+                            onTap: onLogout,
                           ),
                         ],
                       ),
