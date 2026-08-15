@@ -48,6 +48,8 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
   int? _slotLockId;
   int? _bookingId; // stored after createBooking succeeds
   late Razorpay _razorpay;
+  bool _isAdvancePayment = false;
+  double? _chargedAmount; // actual amount (rupees) charged via the gateway, set at order creation
 
   // Coupon
   final _couponController = TextEditingController();
@@ -152,6 +154,28 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
   int get _totalAmount =>
       (_slotCost + _serviceFee - _couponDiscount).toInt().clamp(0, 999999);
 
+  // ── Advance payment ──
+  BookingDescGroundPrice? get _groundPricing {
+    if (_desc == null || _desc!.pricing.perGround.isEmpty) return null;
+    final ground = widget.selectedGround;
+    if (ground == null) return _desc!.pricing.perGround.first;
+    for (final g in _desc!.pricing.perGround) {
+      if (g.groundId == ground.id) return g;
+    }
+    return _desc!.pricing.perGround.first;
+  }
+
+  bool get _allowPartPayment => _groundPricing?.allowPartPayment ?? false;
+
+  int get _advancePercent => _groundPricing?.advancePaymentPercent ?? 30;
+
+  int get _advanceAmount =>
+      (_totalAmount * _advancePercent / 100).ceil().clamp(0, _totalAmount);
+
+  int get _remainingAmount => (_totalAmount - _advanceAmount).clamp(0, _totalAmount);
+
+  int get _payableAmount => _isAdvancePayment ? _advanceAmount : _totalAmount;
+
   // ── Make Payment ──
   Future<void> _makePayment() async {
     if (_paymentLoading) return;
@@ -188,11 +212,19 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
         'startTime':    _startTime,
         'endTime':      _endTime,
         'paymentMethod': 'online',
+        'paymentType':  _isAdvancePayment ? 'part' : 'full',
         if (_appliedCoupon != null) 'couponCode': _appliedCoupon!['code'],
       });
 
       final gatewayConfig = orderData['gatewayConfig'] as Map<String, dynamic>?;
       if (gatewayConfig == null) throw Exception('Failed to create payment order.');
+
+      // The server computes the actual charge (full or advance %) — trust
+      // gatewayConfig's amount (paise) as the source of truth for verify.
+      final gatewayAmountPaise = gatewayConfig['amount'];
+      _chargedAmount = gatewayAmountPaise is num
+          ? gatewayAmountPaise.toDouble() / 100
+          : _payableAmount.toDouble();
 
       final user = SessionManager.instance.currentUser;
 
@@ -238,6 +270,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
         orderId:   response.orderId!,
         paymentId: response.paymentId!,
         signature: response.signature!,
+        amount:    _chargedAmount ?? _payableAmount.toDouble(),
       );
 
       // 5. Create booking
@@ -664,6 +697,10 @@ Widget _buildPaymentContent() {
             value: '₹${_serviceFee.toStringAsFixed(2)}'),
           const SizedBox(height: 16),
         ],
+        if (_allowPartPayment) ...[
+          _buildPaymentOptionSection(),
+          const SizedBox(height: 16),
+        ],
         // Coupon input/applied-chip lives here so the discount is applied
         // before the total, rather than as an afterthought below it. When a
         // coupon is applied, the chip itself shows the code + discount, so
@@ -675,14 +712,29 @@ Widget _buildPaymentContent() {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Total Payment:',
-                style: TextStyle(fontFamily: 'Jost', fontSize: 16,
+            Text(_isAdvancePayment ? 'Advance Amount:' : 'Total Payment:',
+                style: const TextStyle(fontFamily: 'Jost', fontSize: 16,
                     fontWeight: FontWeight.w700, color: Colors.white)),
-            Text('₹$_totalAmount',
+            Text('₹$_payableAmount',
                 style: const TextStyle(fontFamily: 'Jost', fontSize: 18,
                     fontWeight: FontWeight.w700, color: AppColors.limeGreen)),
           ],
         ),
+        if (_isAdvancePayment) ...[
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('Remaining balance (pay at venue)',
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 13,
+                      color: Colors.white.withValues(alpha: 0.6))),
+              Text('₹$_remainingAmount',
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white.withValues(alpha: 0.85))),
+            ],
+          ),
+        ],
         const SizedBox(height: 16),
         Center(
           child: GestureDetector(
@@ -833,6 +885,55 @@ Widget _buildPaymentContent() {
                           color: Colors.white.withValues(alpha: 0.55),
                         ),
                       ),
+                      const SizedBox(height: 20),
+                      Divider(color: Colors.white.withValues(alpha: 0.08)),
+                      const SizedBox(height: 16),
+                      Text(
+                        'BookPlayz',
+                        style: TextStyle(
+                          fontFamily: 'Jost',
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Madurai, Tamil Nadu, India',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          color: Colors.white.withValues(alpha: 0.55),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () => launchUrl(
+                            Uri.parse('mailto:support@bookplayz.com')),
+                        child: Text(
+                          'Email: support@bookplayz.com',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: AppColors.limeGreen.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      GestureDetector(
+                        onTap: () => launchUrl(
+                          Uri.parse('https://www.bookplayz.com'),
+                          mode: LaunchMode.externalApplication,
+                        ),
+                        child: Text(
+                          'Website: www.bookplayz.com',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 12,
+                            color: AppColors.limeGreen.withValues(alpha: 0.85),
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -846,6 +947,38 @@ Widget _buildPaymentContent() {
 
   // Nested inside _buildCostBreakdown()'s own horizontal padding — no
   // padding of its own, or the inset would double up.
+  Widget _buildPaymentOptionSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('PAYMENT OPTION',
+            style: TextStyle(fontFamily: 'Inter', fontSize: 11,
+                fontWeight: FontWeight.w700, letterSpacing: 0.5,
+                color: Colors.white.withValues(alpha: 0.5))),
+        const SizedBox(height: 10),
+        Row(children: [
+          Expanded(
+            child: _PaymentOptionCard(
+              title: 'Full Payment',
+              amount: '₹$_totalAmount',
+              selected: !_isAdvancePayment,
+              onTap: () => setState(() => _isAdvancePayment = false),
+            ),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: _PaymentOptionCard(
+              title: 'Advance ($_advancePercent%)',
+              amount: '₹$_advanceAmount',
+              selected: _isAdvancePayment,
+              onTap: () => setState(() => _isAdvancePayment = true),
+            ),
+          ),
+        ]),
+      ],
+    );
+  }
+
   Widget _buildCouponSection() {
     return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -949,11 +1082,17 @@ Widget _buildPaymentContent() {
             Icon(Icons.monetization_on_rounded,
                 color: AppColors.limeGreen, size: 16),
             const SizedBox(width: 6),
-            Text(
-              'Slot Price : ₹$_totalAmount for ${_desc?.timing.durationHours ?? 1} Hr${(_desc?.timing.durationHours ?? 1) > 1 ? 's' : ''}',
-              style: TextStyle(fontFamily: 'Inter', fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withValues(alpha: 0.85)),
+            Flexible(
+              child: Text(
+                _isAdvancePayment
+                    ? 'Advance ₹$_payableAmount · Balance ₹$_remainingAmount at venue'
+                    : 'Slot Price : ₹$_totalAmount for ${_desc?.timing.durationHours ?? 1} Hr${(_desc?.timing.durationHours ?? 1) > 1 ? 's' : ''}',
+                textAlign: TextAlign.center,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(fontFamily: 'Inter', fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white.withValues(alpha: 0.85)),
+              ),
             ),
           ]),
           const SizedBox(height: 10),
@@ -984,15 +1123,15 @@ Widget _buildPaymentContent() {
                                 fontSize: 17, fontWeight: FontWeight.w700,
                                 color: Colors.white)),
                       ])
-                    : const Row(
+                    : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Text('Make Payment',
-                              style: TextStyle(fontFamily: 'Jost',
+                          Text('Confirm & Pay ₹$_payableAmount',
+                              style: const TextStyle(fontFamily: 'Jost',
                                   fontSize: 17, fontWeight: FontWeight.w700,
                                   color: Colors.white)),
-                          SizedBox(width: 8),
-                          Icon(Icons.arrow_forward_rounded,
+                          const SizedBox(width: 8),
+                          const Icon(Icons.arrow_forward_rounded,
                               color: Colors.white, size: 20),
                         ],
                       ),
@@ -1215,6 +1354,58 @@ Widget _buildPaymentContent() {
                 color: Colors.white,
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _PaymentOptionCard extends StatelessWidget {
+  final String title;
+  final String amount;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _PaymentOptionCard({
+    required this.title,
+    required this.amount,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 150),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? AppColors.limeGreen.withValues(alpha: 0.12)
+              : Colors.white.withValues(alpha: 0.06),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: selected
+                ? AppColors.limeGreen
+                : Colors.white.withValues(alpha: 0.12),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title,
+                style: TextStyle(fontFamily: 'Inter', fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: selected
+                        ? AppColors.limeGreen
+                        : Colors.white.withValues(alpha: 0.75))),
+            const SizedBox(height: 4),
+            Text(amount,
+                style: TextStyle(fontFamily: 'Jost', fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: selected ? AppColors.limeGreen : Colors.white)),
           ],
         ),
       ),

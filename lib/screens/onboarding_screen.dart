@@ -5,6 +5,7 @@ import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../api/api_constants.dart';
 import '../models/onboarding_data.dart';
+import '../models/page_image_model.dart';
 import '../theme/app_theme.dart';
 import '../theme/app_constants.dart';
 
@@ -30,9 +31,10 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Animation<double>? _textFadeAnim;
   final TapGestureRecognizer _venueRegTap = TapGestureRecognizer();
 
-  // Network slide images keyed by index, matched 1:1 against
-  // [onboardingPages]. Falls back to the local asset until/unless loaded.
-  List<String>? _networkImages;
+  // Network slide content (image + title + subtitle) keyed by index,
+  // matched 1:1 against [onboardingPages]. Falls back to the local
+  // hardcoded copy until/unless loaded.
+  List<PageImageModel>? _networkPages;
 
   @override
   void initState() {
@@ -62,7 +64,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
       final images = await PageImagesApi.byPageType(_onboardingPageType);
       if (!mounted || images.length != onboardingPages.length) return;
       setState(() {
-        _networkImages = images.map((e) => e.imageUrl).toList();
+        _networkPages = images;
       });
     } catch (e) {
       debugPrint('Onboarding page images fetch failed, using local assets: $e');
@@ -118,6 +120,20 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     } else {
       Navigator.pushReplacementNamed(context, AppRoutes.signin);
     }
+  }
+
+  String _pageTitle(int index) {
+    final networkTitle = _networkPages?[index].title;
+    if (networkTitle != null && networkTitle.isNotEmpty) return networkTitle;
+    return onboardingPages[index].title;
+  }
+
+  String _pageSubtitle(int index) {
+    final networkSubtitle = _networkPages?[index].subTitle;
+    if (networkSubtitle != null && networkSubtitle.isNotEmpty) return networkSubtitle;
+    final networkDescription = _networkPages?[index].description;
+    if (networkDescription != null && networkDescription.isNotEmpty) return networkDescription;
+    return onboardingPages[index].subtitle;
   }
 
   void _onPageChanged(int index) {
@@ -176,8 +192,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 physics: const NeverScrollableScrollPhysics(), // ← PageView itself locked
                 itemCount: onboardingPages.length,
                 itemBuilder: (context, index) {
-                  final networkUrl = _networkImages?[index];
-                  if (networkUrl != null) {
+                  final networkUrl = _networkPages?[index].imageUrl;
+                  if (networkUrl != null && networkUrl.isNotEmpty) {
                     return Image.network(
                       networkUrl,
                       fit: BoxFit.cover,
@@ -236,7 +252,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             child: Column(
                               children: [
                                 Text(
-                                  onboardingPages[_currentPage].title,
+                                  _pageTitle(_currentPage),
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     fontFamily: 'Jost',
@@ -248,7 +264,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                                 ),
                                 const SizedBox(height: 10),
                                 Text(
-                                  onboardingPages[_currentPage].subtitle,
+                                  _pageSubtitle(_currentPage),
                                   textAlign: TextAlign.center,
                                   style: const TextStyle(
                                     fontFamily: 'Inter',

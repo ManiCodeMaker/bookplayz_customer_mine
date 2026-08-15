@@ -2,6 +2,15 @@ import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:bookplayz/theme/app_theme.dart';
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+const String _kFacebookUrl  = 'https://www.facebook.com/bookplayzapp';
+const String _kInstagramUrl = 'https://www.instagram.com/bookplayzapp/';
+const String _kYoutubeUrl   = 'https://www.youtube.com/@bookplayz-app';
+
+Future<void> _launchSocialUrl(String url) async {
+  await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+}
 
 class UserSideDrawer extends StatelessWidget {
   final VoidCallback onClose;
@@ -235,13 +244,23 @@ class UserSideDrawer extends StatelessWidget {
                           const SizedBox(height: 10),
                           Row(
                             children: [
-                              _SocialBtn(icon: Icons.facebook_rounded, color: const Color(0xFF1877F2)),
+                              _SocialBtn(
+                                icon: Icons.facebook_rounded,
+                                color: const Color(0xFF1877F2),
+                                onTap: () => _launchSocialUrl(_kFacebookUrl),
+                              ),
                               const SizedBox(width: 12),
-                              _SocialBtn(icon: Icons.camera_alt_outlined, color: const Color(0xFFE1306C)),
+                              _SocialBtn(
+                                icon: Icons.camera_alt_outlined,
+                                color: const Color(0xFFE1306C),
+                                onTap: () => _launchSocialUrl(_kInstagramUrl),
+                              ),
                               const SizedBox(width: 12),
-                              _SocialBtn(icon: Icons.close_rounded, color: Colors.black),
-                              const SizedBox(width: 12),
-                              _SocialBtn(icon: Icons.play_arrow_rounded, color: const Color(0xFFFF0000)),
+                              _SocialBtn(
+                                icon: Icons.play_arrow_rounded,
+                                color: const Color(0xFFFF0000),
+                                onTap: () => _launchSocialUrl(_kYoutubeUrl),
+                              ),
                             ],
                           ),
                         ],
@@ -310,15 +329,19 @@ class _DrawerItem extends StatelessWidget {
 class _SocialBtn extends StatelessWidget {
   final IconData icon;
   final Color color;
-  const _SocialBtn({required this.icon, required this.color});
+  final VoidCallback? onTap;
+  const _SocialBtn({required this.icon, required this.color, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 36,
-      height: 36,
-      decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      child: Icon(icon, color: Colors.white, size: 20),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        child: Icon(icon, color: Colors.white, size: 20),
+      ),
     );
   }
 }

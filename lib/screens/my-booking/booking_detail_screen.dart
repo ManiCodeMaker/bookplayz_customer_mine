@@ -1,13 +1,18 @@
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
+import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/utils/receipt_pdf.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/cancellation_sheet.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+
+String _cap(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Booking Detail Screen
@@ -31,6 +36,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   bool _loading = true;
   String? _error;
   bool _isCancelling = false;
+
+  bool _payingBalance = false;
+  double? _chargedAmount;
+  late Razorpay _razorpay;
 
   // ── Data accessors ──────────────────────────────────────────────────────────
 
@@ -130,6 +139,110 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
   void initState() {
     super.initState();
     _fetch();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onBalancePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onBalancePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, (_) {
+      if (mounted) setState(() => _payingBalance = false);
+    });
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    super.dispose();
+  }
+
+  // ── Pay remaining balance online ─────────────────────────────────────────────
+  Future<void> _payRemainingBalance() async {
+    if (_payingBalance) return;
+    setState(() => _payingBalance = true);
+    try {
+      final orderData = await PaymentApi.createOrder({
+        'bookingId':     widget.bookingId,
+        'paymentMethod': 'online',
+      });
+      final gatewayConfig = orderData['gatewayConfig'] as Map<String, dynamic>?;
+      if (gatewayConfig == null) throw Exception('Failed to create payment order.');
+
+      final gatewayAmountPaise = gatewayConfig['amount'];
+      _chargedAmount = gatewayAmountPaise is num
+          ? gatewayAmountPaise.toDouble() / 100
+          : null;
+
+      final user = SessionManager.instance.currentUser;
+      final options = {
+        'key':         gatewayConfig['key'] ?? gatewayConfig['keyId'],
+        'amount':      gatewayConfig['amount'],
+        'currency':    gatewayConfig['currency'] ?? 'INR',
+        'order_id':    gatewayConfig['order_id'] ?? gatewayConfig['orderId'],
+        'name':        'BookPlayz',
+        'description': 'Balance payment for Booking #${widget.bookingId}',
+        'prefill': {
+          'name':    user?.fullName ?? '',
+          'email':   user?.email ?? '',
+          'contact': user?.mobile ?? '',
+        },
+        'theme': {'color': '#9CCE00'},
+      };
+      _razorpay.open(options);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _payingBalance = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onBalancePaymentSuccess(PaymentSuccessResponse response) async {
+    try {
+      await PaymentApi.verifyPayment(
+        orderId:   response.orderId!,
+        paymentId: response.paymentId!,
+        signature: response.signature!,
+        amount:    _chargedAmount ?? 0,
+        bookingId: widget.bookingId,
+      );
+      if (mounted) {
+        setState(() => _payingBalance = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Balance payment successful!'),
+            backgroundColor: Color(0xFF22C55E),
+          ),
+        );
+      }
+      await _fetch();
+    } catch (e) {
+      if (mounted) {
+        setState(() => _payingBalance = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment succeeded but update failed. Please contact support.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  void _onBalancePaymentError(PaymentFailureResponse response) {
+    if (!mounted) return;
+    setState(() => _payingBalance = false);
+    final msg = response.message ?? '';
+    final isCancelled = response.code == Razorpay.PAYMENT_CANCELLED ||
+        msg.isEmpty || msg.toLowerCase() == 'undefined';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(isCancelled ? 'Payment cancelled.' : msg),
+        backgroundColor: Colors.red,
+      ),
+    );
   }
 
   Future<void> _fetch() async {
@@ -393,6 +506,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         // Booking code card
         _buildBookingCodeCard(),
 
+        // Download Receipt button — confirmed/completed bookings only
+        if (_s('status') == 'confirmed' || _s('status') == 'completed')
+          _buildDownloadReceiptButton(),
+
         // Get Directions button
         if (hasLocation) _buildDirectionsButton(),
 
@@ -400,6 +517,72 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         if (_s('status') == 'confirmed') _buildCancelButton(),
       ],
     );
+  }
+
+  Widget _buildDownloadReceiptButton() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: SizedBox(
+        width: double.infinity,
+        height: 48,
+        child: ElevatedButton.icon(
+          onPressed: _downloadReceipt,
+          icon: const Icon(Icons.download_outlined, size: 18),
+          label: const Text('Download Receipt',
+              style: TextStyle(fontWeight: FontWeight.w700)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.limeGreen,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _downloadReceipt() async {
+    final user = SessionManager.instance.currentUser;
+    final isPartPayment = _data?['isPartPayment'] == true;
+
+    try {
+      await shareBookingReceipt(
+        bookingCode:    _s('bookingCode'),
+        venueName:      _s('venueName'),
+        venueAddress:   [_s('venueAddress'), _s('venueCity'), _s('venueState')]
+            .where((s) => s.isNotEmpty)
+            .join(', '),
+        sport:          _s('sport'),
+        groundName:     _s('groundName'),
+        bookingDate:    _formattedDate,
+        timeSlot:       _timeSlot,
+        customerName:   user?.fullName ?? '',
+        customerPhone:  user?.mobile ?? '',
+        basePrice:      _d('basePrice')?.toStringAsFixed(2) ?? _s('totalAmount'),
+        serviceFee:     _d('serviceFee')?.toStringAsFixed(2) ?? '0.00',
+        totalAmount:    _d('totalAmount')?.toStringAsFixed(2) ?? _s('totalAmount'),
+        paymentStatus:  _ps('status').isNotEmpty
+            ? _cap(_ps('status'))
+            : _cap(_s('paymentStatus')),
+        paidAmount:     isPartPayment ? _d('paidAmount')?.toStringAsFixed(2) : null,
+        remainingAmount: isPartPayment ? _d('remainingAmount')?.toStringAsFixed(2) : null,
+        isPartPayment:  isPartPayment,
+        paymentMethod:  _ps('paymentMethod').isNotEmpty ? _ps('paymentMethod') : null,
+        transactionId:  _ps('gatewayPaymentId').isNotEmpty ? _ps('gatewayPaymentId') : null,
+        paidAt:         _ps('paidAt').isNotEmpty ? _ps('paidAt') : null,
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to generate receipt.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 
   Widget _buildCancelButton() {
@@ -811,12 +994,48 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           value: '₹${paidAmount.toStringAsFixed(2)}',
           valueColor: const Color(0xFF22C55E),
         ),
-        if (remainingAmount > 0)
+        if (remainingAmount > 0) ...[
           _DetailRow(
             label: 'Remaining',
             value: '₹${remainingAmount.toStringAsFixed(2)}',
             valueColor: const Color(0xFFEF4444),
           ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: GestureDetector(
+              onTap: _payingBalance ? null : _payRemainingBalance,
+              child: Container(
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _payingBalance
+                      ? AppColors.limeGreen.withValues(alpha: 0.6)
+                      : AppColors.limeGreen,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: _payingBalance
+                      ? const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            AppLoader(size: 20),
+                            SizedBox(width: 10),
+                            Text('Processing…',
+                                style: TextStyle(fontFamily: 'Jost',
+                                    fontSize: 14, fontWeight: FontWeight.w700,
+                                    color: Colors.white)),
+                          ],
+                        )
+                      : Text(
+                          'Pay Remaining ₹${remainingAmount.toStringAsFixed(2)} Online',
+                          style: const TextStyle(fontFamily: 'Jost',
+                              fontSize: 14, fontWeight: FontWeight.w700,
+                              color: Colors.white),
+                        ),
+                ),
+              ),
+            ),
+          ),
+        ],
         // Payment status chip row
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -1008,6 +1227,8 @@ class _StatusChip extends StatelessWidget {
       case 'paid':
       case 'completed':
         return const Color(0xFF22C55E);
+      case 'partial':
+        return const Color(0xFFF59E0B);
       case 'pending':
         return const Color(0xFFF59E0B);
       case 'failed':

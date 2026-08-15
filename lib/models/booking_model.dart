@@ -349,6 +349,9 @@ class BookingDescGroundPrice {
   final int minBookingSlots;
   final int? maxCapacity;
   final int basePrice;
+  final bool allowPartPayment;
+  final int advancePaymentPercent;
+  final int? advancePaymentAmount;
 
   const BookingDescGroundPrice({
     required this.groundId,
@@ -358,6 +361,9 @@ class BookingDescGroundPrice {
     required this.minBookingSlots,
     this.maxCapacity,
     required this.basePrice,
+    required this.allowPartPayment,
+    required this.advancePaymentPercent,
+    this.advancePaymentAmount,
   });
 
   factory BookingDescGroundPrice.fromJson(Map<String, dynamic> j) =>
@@ -369,5 +375,8 @@ class BookingDescGroundPrice {
         minBookingSlots: j['minBookingSlots'] as int? ?? 1,
         maxCapacity:     j['maxCapacity'] as int?,
         basePrice:       j['basePrice'] as int? ?? 0,
+        allowPartPayment:       j['allowPartPayment'] as bool? ?? false,
+        advancePaymentPercent:  j['advancePaymentPercent'] as int? ?? 30,
+        advancePaymentAmount:   j['advancePaymentAmount'] as int?,
       );
 }

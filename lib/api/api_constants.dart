@@ -387,6 +387,8 @@ class PaymentApi {
     required String orderId,
     required String paymentId,
     required String signature,
+    required double amount,
+    int? bookingId,
   }) async {
     final res = await ApiService.instance.post(
       '${ApiConstants.baseUrl}/payments/verify',
@@ -394,6 +396,8 @@ class PaymentApi {
         'orderId':   orderId,
         'paymentId': paymentId,
         'signature': signature,
+        'amount':    amount,
+        if (bookingId != null) 'bookingId': bookingId,
       },
     );
     return res['success'] == true;
