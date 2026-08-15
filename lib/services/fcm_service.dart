@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -70,7 +72,26 @@ class FcmService {
     });
   }
 
-  Future<String?> getToken() => _fcm.getToken();
+  /// On iOS, an FCM token can't be minted until APNs has handed the app a
+  /// token; on the Simulator that never happens, so we wait briefly and
+  /// fall back to null instead of letting the caller's flow (e.g. OTP
+  /// verification) fail on an unrelated push-notification error.
+  Future<String?> getToken() async {
+    try {
+      if (Platform.isIOS) {
+        var apnsToken = await _fcm.getAPNSToken();
+        for (var i = 0; i < 5 && apnsToken == null; i++) {
+          await Future.delayed(const Duration(seconds: 1));
+          apnsToken = await _fcm.getAPNSToken();
+        }
+        if (apnsToken == null) return null;
+      }
+      return await _fcm.getToken();
+    } catch (e) {
+      debugPrint('[FCM] getToken FAILED: $e');
+      return null;
+    }
+  }
 
   /// Re-registers the current token after a session restore, covering tokens
   /// that rotated while the app was closed (onTokenRefresh won't re-fire).

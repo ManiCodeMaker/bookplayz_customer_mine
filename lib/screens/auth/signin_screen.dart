@@ -1,4 +1,3 @@
-  import 'dart:io';
   import 'package:flutter/material.dart';
   import 'package:flutter/services.dart';
   import 'package:google_fonts/google_fonts.dart';
@@ -195,14 +194,6 @@
                               width: 24, height: 24),
                           onTap: _onGoogleSignIn,
                         ),
-                        if (Platform.isIOS) ...[
-                          const SizedBox(width: 24),
-                          _SocialButton(
-                            icon: const Icon(Icons.apple,
-                                color: AppColors.navyBlue, size: 28),
-                            onTap: _onAppleSignIn,
-                          ),
-                        ],
                       ],
                     ),
                   ],
@@ -263,10 +254,6 @@
       } finally {
         if (mounted) setState(() => _loading = false);
       }
-    }
-
-    Future<void> _onAppleSignIn() async {
-      // Apple sign-in — implement when Apple developer account is ready
     }
 
     void _showCountryPicker(BuildContext context) {

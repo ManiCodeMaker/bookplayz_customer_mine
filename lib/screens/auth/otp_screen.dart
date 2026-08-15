@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bookplayz/services/fcm_service.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
@@ -78,6 +80,9 @@ class _OtpScreenState extends State<OTPScreen>
   }
 
   Future<void> _listenForSms() async {
+    // SmartAuth's getSmsCode wraps Android's SMS User Consent API only —
+    // there is no iOS equivalent via this plugin, so skip it there.
+    if (!Platform.isAndroid) return;
     final result = await _smartAuth.getSmsCode(
       useUserConsentApi: true,
       matcher: r'\d{4}',
@@ -93,7 +98,7 @@ class _OtpScreenState extends State<OTPScreen>
 
   @override
   void dispose() {
-    _smartAuth.removeSmsListener();
+    if (Platform.isAndroid) _smartAuth.removeSmsListener();
     _staggerController.dispose();
     for (final c in _controllers) { c.dispose(); }
     for (final f in _focusNodes) { f.dispose(); }
