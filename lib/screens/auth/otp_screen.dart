@@ -418,7 +418,7 @@ class _OtpBoxState extends State<_OtpBox> {
     final isFocused = widget.focusNode.hasFocus;
 
     return SizedBox(
-      width: 72, height: 72,
+      width: 62, height: 62,
       child: KeyboardListener(
         focusNode: FocusNode(),
         onKeyEvent: (event) {
