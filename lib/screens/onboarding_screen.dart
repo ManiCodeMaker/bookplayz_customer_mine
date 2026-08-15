@@ -7,6 +7,7 @@ import '../api/api_constants.dart';
 import '../models/onboarding_data.dart';
 import '../models/page_image_model.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_loader.dart';
 import '../theme/app_constants.dart';
 
 /// pageType slug (superadmin "User App Splash Screen") that backs this
@@ -36,6 +37,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   // hardcoded copy until/unless loaded.
   List<PageImageModel>? _networkPages;
 
+  // True until the first _loadImages() attempt finishes (success or
+  // failure). Kept true rather than showing the local stock image, so the
+  // slide never flashes local asset → network image once it arrives.
+  bool _imagesLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -62,12 +68,14 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   Future<void> _loadImages() async {
     try {
       final images = await PageImagesApi.byPageType(_onboardingPageType);
-      if (!mounted || images.length != onboardingPages.length) return;
+      if (!mounted) return;
       setState(() {
-        _networkPages = images;
+        if (images.length == onboardingPages.length) _networkPages = images;
+        _imagesLoading = false;
       });
     } catch (e) {
       debugPrint('Onboarding page images fetch failed, using local assets: $e');
+      if (mounted) setState(() => _imagesLoading = false);
     }
   }
 
@@ -186,36 +194,44 @@ class _OnboardingScreenState extends State<OnboardingScreen>
               left: 0,
               right: 0,
               height: topImageHeight,
-              child: PageView.builder(
-                controller: _pageController,
-                onPageChanged: _onPageChanged,
-                physics: const NeverScrollableScrollPhysics(), // ← PageView itself locked
-                itemCount: onboardingPages.length,
-                itemBuilder: (context, index) {
-                  final networkUrl = _networkPages?[index].imageUrl;
-                  if (networkUrl != null && networkUrl.isNotEmpty) {
-                    return Image.network(
-                      networkUrl,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, progress) {
-                        if (progress == null) return child;
+              child: _imagesLoading
+                  ? Container(
+                      color: AppColors.darkNavy,
+                      child: const Center(child: AppLoader()),
+                    )
+                  : PageView.builder(
+                      controller: _pageController,
+                      onPageChanged: _onPageChanged,
+                      physics: const NeverScrollableScrollPhysics(), // ← PageView itself locked
+                      itemCount: onboardingPages.length,
+                      itemBuilder: (context, index) {
+                        final networkUrl = _networkPages?[index].imageUrl;
+                        if (networkUrl != null && networkUrl.isNotEmpty) {
+                          return Image.network(
+                            networkUrl,
+                            fit: BoxFit.cover,
+                            loadingBuilder: (context, child, progress) {
+                              if (progress == null) return child;
+                              // Show a spinner (not the local stock image)
+                              // while the network bytes download, so the
+                              // slide never flashes local → backend image.
+                              return Container(
+                                color: AppColors.darkNavy,
+                                child: const Center(child: AppLoader()),
+                              );
+                            },
+                            errorBuilder: (context, error, stackTrace) => Image.asset(
+                              onboardingPages[index].image,
+                              fit: BoxFit.cover,
+                            ),
+                          );
+                        }
                         return Image.asset(
                           onboardingPages[index].image,
                           fit: BoxFit.cover,
                         );
                       },
-                      errorBuilder: (context, error, stackTrace) => Image.asset(
-                        onboardingPages[index].image,
-                        fit: BoxFit.cover,
-                      ),
-                    );
-                  }
-                  return Image.asset(
-                    onboardingPages[index].image,
-                    fit: BoxFit.cover,
-                  );
-                },
-              ),
+                    ),
             ),
 
             // ── Bottom navy brush-stroke panel ──
