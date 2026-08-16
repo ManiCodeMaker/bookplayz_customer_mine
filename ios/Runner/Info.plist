@@ -22,16 +22,6 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
-	<key>LSRequiresIPhoneOS</key>
-	<true/>
-
-	<!-- ── Deep linking ── -->
-	<key>FlutterDeepLinkingEnabled</key>
-	<true/>
-
-	<!-- ── Custom URL scheme: bookplayz:// ── -->
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -43,7 +33,18 @@
 			</array>
 		</dict>
 	</array>
-
+	<key>CFBundleVersion</key>
+	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<key>FlutterDeepLinkingEnabled</key>
+	<true/>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>BookPlayZ needs your location to show nearby venues.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>BookPlayZ needs your location to show nearby venues.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -84,7 +85,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>BookPlayZ needs your location to show nearby venues.</string>
 </dict>
 </plist>
