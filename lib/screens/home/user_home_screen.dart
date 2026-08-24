@@ -1,6 +1,7 @@
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/api/api_constants.dart';
+import 'package:bookplayz/models/page_image_model.dart';
 import 'package:bookplayz/models/promo_banner_model.dart';
 import 'package:bookplayz/models/venue_model.dart';
 import 'package:bookplayz/models/venue_review_model.dart';
@@ -424,53 +425,71 @@ Future<void> _toggleFavorite(int venueId) async {
   }
 }
 
-// ── Stats Grid (4 cards) ──────────────────────────────────
-class _StatsGrid extends StatelessWidget {
-  final List<Map<String, dynamic>> _stats = const [
-    {
-      'title': 'Leave your Stress Come and Joy with your Friends',
-      'badge': '15 Course',
-      'image': AppImages.homeStats1,
-    },
-    {
-      'title': 'Great place to Book your Venue',
-      'badge': '800+ Venues',
-      'image': AppImages.homeStats2,
-    },
-    {
-      'title': 'Train with the Best from Us',
-      'badge': '258+ Trainers',
-      'image': AppImages.homeStats3,
-    },
-    {
-      'title': 'Find your play tribe partners',
-      'badge': null,
-      'image': AppImages.homeStats4,
-    },
-  ];
-
+// ── Offers Grid (backend-driven, 4 cards) ─────────────────
+class _StatsGrid extends StatefulWidget {
   const _StatsGrid();
 
   @override
+  State<_StatsGrid> createState() => _StatsGridState();
+}
+
+class _StatsGridState extends State<_StatsGrid> {
+  static const String _offersPageType = 'offers';
+
+  List<PageImageModel> _images = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadImages();
+  }
+
+  Future<void> _loadImages() async {
+    try {
+      final images = await PageImagesApi.byPageType(_offersPageType);
+      if (!mounted) return;
+      setState(() {
+        _images = images;
+        _loading = false;
+      });
+    } catch (e) {
+      // Non-critical decorative section — log and just hide it, same as
+      // the reviews section above does on failure.
+      debugPrint('Offers grid images fetch failed: $e');
+      if (!mounted) return;
+      setState(() => _loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: Center(child: AppLoader()),
+      );
+    }
+    if (_images.isEmpty) return const SizedBox.shrink();
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _stats.length,
+      itemCount: _images.length,
       gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.1,
+        childAspectRatio: 1.5,
       ),
-      itemBuilder: (_, i) => _StatCard(data: _stats[i]),
+      itemBuilder: (_, i) => _StatCard(imageUrl: _images[i].imageUrl),
     );
   }
 }
 
 class _StatCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  const _StatCard({required this.data});
+  final String imageUrl;
+  const _StatCard({required this.imageUrl});
 
   @override
   Widget build(BuildContext context) {
@@ -478,57 +497,12 @@ class _StatCard extends StatelessWidget {
       borderRadius: BorderRadius.circular(16),
       child: Container(
         color: AppColors.veryDarkBlue.withValues(alpha: 0.5),
-        child: Stack(
-          children: [
-            // Text — top-left
-            Positioned(
-              left: 14,
-              top: 14,
-              right: 50,
-              bottom: 14,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    data['title'],
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.softYellowGreen,
-                      height: 1.4,
-                    ),
-                  ),
-                  if (data['badge'] != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      data['badge'],
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-
-            // 3D illustration — bottom-right, clipped by card
-            Positioned(
-              right: 0,
-              bottom: 0,
-              child: Image.asset(
-                data['image'],
-                width: 100,
-                height: 100,
-                fit: BoxFit.contain,
-              ),
-            ),
-          ],
+        child: Image.network(
+          imageUrl,
+          fit: BoxFit.contain,
+          width: double.infinity,
+          height: double.infinity,
+          errorBuilder: (_, _, _) => const SizedBox.shrink(),
         ),
       ),
     );
