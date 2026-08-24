@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:flutter/foundation.dart';
 import 'package:bookplayz/models/venue_detail_model.dart';
@@ -668,7 +670,7 @@ class PushDevicesApi {
     try {
       await ApiService.instance.post(devices, {
         'token': token,
-        'platform': 'android',
+        'platform': Platform.isIOS ? 'ios' : 'android',
       });
     } catch (e) {
       debugPrint('[PushDevicesApi] device registration failed: $e');
