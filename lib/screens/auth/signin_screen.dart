@@ -1,3 +1,5 @@
+  import 'dart:io';
+
   import 'package:flutter/material.dart';
   import 'package:flutter/services.dart';
   import 'package:google_fonts/google_fonts.dart';
@@ -183,19 +185,21 @@
                       loading: _loading,
                       onPressed: _loading ? null : _onContinue,
                     ),
-                    const SizedBox(height: 24),
-                    const _OrDivider(label: 'Or Sign In with'),
-                    const SizedBox(height: 20),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _SocialButton(
-                          icon: SvgPicture.asset(AppImages.googleIcon,
-                              width: 24, height: 24),
-                          onTap: _onGoogleSignIn,
-                        ),
-                      ],
-                    ),
+                    if (Platform.isAndroid) ...[
+                      const SizedBox(height: 24),
+                      const _OrDivider(label: 'Or Sign In with'),
+                      const SizedBox(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _SocialButton(
+                            icon: SvgPicture.asset(AppImages.googleIcon,
+                                width: 24, height: 24),
+                            onTap: _onGoogleSignIn,
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
                 ),
               ),

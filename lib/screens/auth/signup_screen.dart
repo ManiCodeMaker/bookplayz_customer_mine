@@ -1,3 +1,5 @@
+// import 'dart:io'; // ← needed if the Google/Apple social sign-up section below is re-enabled
+
 import 'package:bookplayz/theme/app_constants.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -296,33 +298,28 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   const SizedBox(height: 24),
 
-                  const _OrDivider(label: 'Or Sign Up with'),
-                  const SizedBox(height: 25),
-
-                  // Social buttons
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _SocialButton(
-                        icon: SvgPicture.asset(
-                          AppImages.googleIcon,
-                          width: 24,
-                          height: 24,
-                        ),
-                        onTap: () {},
-                      ),
-                      const SizedBox(width: 24),
-                      _SocialButton(
-                        icon: const Icon(
-                          Icons.apple,
-                          color: AppColors.blue,
-                          size: 28,
-                        ),
-                        onTap: () {},
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
+                  // ── Social sign-up (hidden for now — Google-only-on-Android,
+                  // no Apple — re-enable by uncommenting this block plus the
+                  // dart:io import and the _OrDivider/_SocialButton widgets
+                  // below when this is needed again) ──
+                  // if (Platform.isAndroid) ...[
+                  //   const _OrDivider(label: 'Or Sign Up with'),
+                  //   const SizedBox(height: 25),
+                  //   Row(
+                  //     mainAxisAlignment: MainAxisAlignment.center,
+                  //     children: [
+                  //       _SocialButton(
+                  //         icon: SvgPicture.asset(
+                  //           AppImages.googleIcon,
+                  //           width: 24,
+                  //           height: 24,
+                  //         ),
+                  //         onTap: () {},
+                  //       ),
+                  //     ],
+                  //   ),
+                  //   const SizedBox(height: 16),
+                  // ],
 
                   // Terms
                   Center(
@@ -631,64 +628,67 @@ class _PrimaryButton extends StatelessWidget {
   }
 }
 
-class _OrDivider extends StatelessWidget {
-  final String label;
-  const _OrDivider({required this.label});
+// ── Used by the commented-out social sign-up section above — kept for when
+// it's re-enabled ──
+// class _OrDivider extends StatelessWidget {
+//   final String label;
+//   const _OrDivider({required this.label});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Row(
+//       children: [
+//         Expanded(
+//           child: Divider(
+//               color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+//         ),
+//         Padding(
+//           padding: const EdgeInsets.symmetric(horizontal: 12),
+//           child: Text(
+//             label,
+//             style: TextStyle(
+//               fontFamily: 'Jost',
+//               fontSize: 14,
+//               letterSpacing: 0.2,
+//               color: Colors.white.withValues(alpha: 0.5),
+//             ),
+//           ),
+//         ),
+//         Expanded(
+//           child: Divider(
+//               color: Colors.white.withValues(alpha: 0.2), thickness: 1),
+//         ),
+//       ],
+//     );
+//   }
+// }
+//
+// class _SocialButton extends StatelessWidget {
+//   final Widget icon;
+//   final VoidCallback onTap;
+//   const _SocialButton({required this.icon, required this.onTap});
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return GestureDetector(
+//       onTap: onTap,
+//       child: Container(
+//         width: 72,
+//         height: 48,
+//         decoration: BoxDecoration(
+//           color: Colors.white,
+//           borderRadius: BorderRadius.circular(8),
+//           boxShadow: [
+//             BoxShadow(
+//               color: Colors.black.withValues(alpha: 0.1),
+//               blurRadius: 8,
+//               offset: const Offset(0, 2),
+//             ),
+//           ],
+//         ),
+//         child: Center(child: icon),
+//       ),
+//     );
+//   }
+// }
 
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: Divider(
-              color: Colors.white.withValues(alpha: 0.2), thickness: 1),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text(
-            label,
-            style: TextStyle(
-              fontFamily: 'Jost',
-              fontSize: 14,
-              letterSpacing: 0.2,
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
-          ),
-        ),
-        Expanded(
-          child: Divider(
-              color: Colors.white.withValues(alpha: 0.2), thickness: 1),
-        ),
-      ],
-    );
-  }
-}
-
-class _SocialButton extends StatelessWidget {
-  final Widget icon;
-  final VoidCallback onTap;
-  const _SocialButton({required this.icon, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 72,
-        height: 48,
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Center(child: icon),
-      ),
-    );
-  }
-}
