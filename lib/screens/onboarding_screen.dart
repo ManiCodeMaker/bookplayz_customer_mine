@@ -361,19 +361,19 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                             fontFamily: 'Jost',
                             color: AppColors.white.withValues(alpha: 0.65),
                           ),
-                          children: [
-                            const TextSpan(
-                                text: "Don't have Registered your Venue? "),
-                            TextSpan(
-                              text: 'Register',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.limeGreen,
-                              ),
-                              recognizer: _venueRegTap,
-                            ),
-                          ],
+                          // children: [
+                          //   const TextSpan(
+                          //       text: "Don't have Registered your Venue? "),
+                          //   TextSpan(
+                          //     text: 'Register',
+                          //     style: const TextStyle(
+                          //       fontSize: 16,
+                          //       fontWeight: FontWeight.w600,
+                          //       color: AppColors.limeGreen,
+                          //     ),
+                          //     recognizer: _venueRegTap,
+                          //   ),
+                          // ],
                         ),
                       ),
                     ] else
