@@ -105,6 +105,49 @@ class AuthApi {
     final res = await ApiService.instance.post(ssoLoginUrl, body);
     return res['data'] as Map<String, dynamic>;
   }
+
+  static const String accountRecoveryRequestUrl = '${ApiConstants.baseUrl}/auth/account-recovery/request';
+  static const String accountRecoveryResolveUrl = '${ApiConstants.baseUrl}/auth/account-recovery/resolve';
+
+  static Future<Map<String, dynamic>> requestAccountRecovery({
+    required String identifier,
+    String identifierType = 'mobile',
+  }) async {
+    final res = await ApiService.instance.post(accountRecoveryRequestUrl, {
+      'identifier': identifier,
+      'identifierType': identifierType,
+      'loginAs': 'user',
+    });
+    return res['data'] as Map<String, dynamic>;
+  }
+
+  /// [action] is 'retrieve' | 'create_new'.
+  static Future<Map<String, dynamic>> resolveAccountRecovery({
+    required String identifier,
+    String identifierType = 'mobile',
+    required String otp,
+    required String action,
+  }) async {
+    final res = await ApiService.instance.post(accountRecoveryResolveUrl, {
+      'identifier': identifier,
+      'identifierType': identifierType,
+      'otp': otp,
+      'action': action,
+      'loginAs': 'user',
+    });
+    return res['data'] as Map<String, dynamic>;
+  }
+}
+
+// ── Account (self-service delete) ────────────────────────────────────────
+class AccountApi {
+  AccountApi._();
+  static const String deleteAccount = '${ApiConstants.baseUrl}/users/account';
+
+  static Future<Map<String, dynamic>> deleteMyAccount() async {
+    final res = await ApiService.instance.delete(deleteAccount);
+    return res['data'] as Map<String, dynamic>;
+  }
 }
 
 // ── Profile ───────────────────────────────────────────────────────────────────

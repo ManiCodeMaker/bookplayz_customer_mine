@@ -3,13 +3,15 @@ import 'dart:io';
 import 'package:bookplayz/services/fcm_service.dart';
 import 'package:bookplayz/widgets/app_loader.dart';
 import 'package:bookplayz/widgets/app_snackbar.dart';
+import 'package:bookplayz/widgets/otp_box.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:smart_auth/smart_auth.dart';
 import '../../theme/app_theme.dart';
 import '../../theme/app_constants.dart';
 import '../../api/api_constants.dart';
+import '../../api/api_service.dart';
 import '../../api/session_manager.dart';
+import '../../utils/deleted_account_handler.dart';
 
 
 class OTPScreen extends StatefulWidget {
@@ -152,10 +154,15 @@ class _OtpScreenState extends State<OTPScreen>
       );
     } catch (e) {
       if (!mounted) return;
+      if (await handleDeletedAccountError(
+        context, e,
+        identifier: _phoneNumber,
+        identifierType: 'mobile',
+      )) return;
       // Clear OTP boxes on wrong OTP
       for (final c in _controllers) { c.clear(); }
       _focusNodes[0].requestFocus();
-      AppSnackbar.showError(context, e.toString());
+      AppSnackbar.showError(context, e is ApiException ? e.message : e.toString());
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -294,7 +301,7 @@ class _OtpScreenState extends State<OTPScreen>
                             ),
                           );
                         },
-                        child: _OtpBox(
+                        child: OtpBox(
                           controller: _controllers[index],
                           focusNode: _focusNodes[index],
                           onChanged: (val) => _onDigitChanged(val, index),
@@ -380,95 +387,6 @@ class _OtpScreenState extends State<OTPScreen>
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-// ── Single OTP digit box ──────────────────────────────────
-class _OtpBox extends StatefulWidget {
-  final TextEditingController controller;
-  final FocusNode focusNode;
-  final ValueChanged<String> onChanged;
-  final VoidCallback onBackspace;
-
-  const _OtpBox({
-    required this.controller,
-    required this.focusNode,
-    required this.onChanged,
-    required this.onBackspace,
-  });
-
-  @override
-  State<_OtpBox> createState() => _OtpBoxState();
-}
-
-class _OtpBoxState extends State<_OtpBox> {
-  void _rebuild() => setState(() {});
-
-  @override
-  void initState() {
-    super.initState();
-    widget.focusNode.addListener(_rebuild);
-  }
-
-  @override
-  void dispose() {
-    widget.focusNode.removeListener(_rebuild);
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isFocused = widget.focusNode.hasFocus;
-
-    return SizedBox(
-      width: 62, height: 62,
-      child: KeyboardListener(
-        focusNode: FocusNode(),
-        onKeyEvent: (event) {
-          if (event is KeyDownEvent &&
-              event.logicalKey == LogicalKeyboardKey.backspace &&
-              widget.controller.text.isEmpty) {
-            widget.onBackspace();
-          }
-        },
-        child: TextField(
-          controller: widget.controller,
-          focusNode: widget.focusNode,
-          keyboardType: TextInputType.number,
-          textAlign: TextAlign.center,
-          maxLength: 1,
-          onChanged: widget.onChanged,
-          style: TextStyle(
-            fontFamily: 'Inter',
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: isFocused
-                ? AppColors.white
-                : AppColors.white.withValues(alpha: 0.5),
-          ),
-          decoration: InputDecoration(
-            counterText: '',
-            filled: true,
-            fillColor: AppColors.white.withValues(alpha: 0.08),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  BorderSide(color: AppColors.white.withValues(alpha: 0.15)),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  BorderSide(color: AppColors.white.withValues(alpha: 0.15)),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide:
-                  const BorderSide(color: AppColors.limeGreen, width: 1.5),
-            ),
-          ),
-        ),
       ),
     );
   }

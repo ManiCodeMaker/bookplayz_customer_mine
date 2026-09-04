@@ -1,4 +1,5 @@
 import 'package:bookplayz/api/session_manager.dart';
+import 'package:bookplayz/screens/profile/delete_account_screen.dart';
 import 'package:bookplayz/screens/profile/edit_profile_screen.dart';
 import 'package:bookplayz/screens/profile/fav_screen.dart';
 import 'package:bookplayz/screens/profile/privacy_policy_screen.dart';
@@ -66,12 +67,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 builder: (_) => PrivacyPolicyScreen(onBack: _popRoute),
               );
 
+            case '/delete-account':
+              return MaterialPageRoute(
+                builder: (_) => DeleteAccountScreen(onBack: _popRoute),
+              );
+
             default:
               return MaterialPageRoute(
                 builder: (_) => _ProfileHome(
                   onEditProfileTap:    () => _pushRoute('/edit-profile'),
                   onFavoritesTap:      () => _pushRoute('/favorites'),
                   onPrivacyPolicyTap:  () => _pushRoute('/privacy-policy'),
+                  onDeleteAccountTap:  () => _pushRoute('/delete-account'),
                 ),
               );
           }
@@ -86,11 +93,13 @@ class _ProfileHome extends StatelessWidget {
   final VoidCallback? onEditProfileTap;
   final VoidCallback? onFavoritesTap;
   final VoidCallback? onPrivacyPolicyTap;
+  final VoidCallback? onDeleteAccountTap;
 
   const _ProfileHome({
     this.onEditProfileTap,
     this.onFavoritesTap,
     this.onPrivacyPolicyTap,
+    this.onDeleteAccountTap,
   });
 
   @override
@@ -172,6 +181,21 @@ class _ProfileHome extends StatelessWidget {
                         label: 'Favorites',
                         subtitle: 'Your saved venues',
                         onTap: onFavoritesTap ?? () {},
+                        showDivider: false,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  _MenuCard(
+                    title: 'Danger Zone',
+                    items: [
+                      _MenuItem(
+                        icon: Icons.delete_outline_rounded,
+                        label: 'Delete Account',
+                        subtitle: 'Permanently remove your account',
+                        labelColor: const Color(0xFFEF4444),
+                        onTap: onDeleteAccountTap ?? () {},
                         showDivider: false,
                       ),
                     ],
@@ -328,6 +352,7 @@ class _MenuItem extends StatelessWidget {
   final String? subtitle;
   final VoidCallback onTap;
   final bool showDivider;
+  final Color? labelColor;
 
   const _MenuItem({
     this.icon,
@@ -335,6 +360,7 @@ class _MenuItem extends StatelessWidget {
     this.subtitle,
     required this.onTap,
     this.showDivider = true,
+    this.labelColor,
   });
 
   @override
@@ -349,7 +375,7 @@ class _MenuItem extends StatelessWidget {
             child: Row(
               children: [
                 if (icon != null) ...[
-                  Icon(icon, color: AppColors.navyBlue, size: 20),
+                  Icon(icon, color: labelColor ?? AppColors.navyBlue, size: 20),
                   const SizedBox(width: 12),
                 ],
                 Expanded(
@@ -362,7 +388,7 @@ class _MenuItem extends StatelessWidget {
                           fontFamily: 'Inter',
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.navyBlue,
+                          color: labelColor ?? AppColors.navyBlue,
                         ),
                       ),
                       if (subtitle != null) ...[

@@ -79,4 +79,6 @@ class AppRoutes {
   static const String venueMap    = '/venue-map';
   static const String tournaments = '/tournaments';
   static const String tournamentDetail = '/tournament-detail';
+  static const String accountRecovery = '/account-recovery';
+  static const String accountRecoveryOtp = '/account-recovery-otp';
 }

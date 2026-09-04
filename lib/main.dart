@@ -5,6 +5,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:bookplayz/screens/auth/otp_screen.dart';
 import 'package:bookplayz/screens/auth/signin_screen.dart';
 import 'package:bookplayz/screens/auth/signup_screen.dart';
+import 'package:bookplayz/screens/auth/account_recovery_screen.dart';
+import 'package:bookplayz/screens/auth/account_recovery_otp_screen.dart';
 import 'package:bookplayz/screens/map/venue_map_screen.dart';
 import 'package:bookplayz/screens/search/search_screen.dart';
 import 'package:google_maps_flutter_android/google_maps_flutter_android.dart';
@@ -80,6 +82,8 @@ class BookPlayZApp extends StatelessWidget {
           final id = ModalRoute.of(context)!.settings.arguments as int;
           return TournamentDetailScreen(tournamentId: id);
         },
+        AppRoutes.accountRecovery:    (_) => const AccountRecoveryScreen(),
+        AppRoutes.accountRecoveryOtp: (_) => const AccountRecoveryOtpScreen(),
       },
 
       // ── Deep link handler ──

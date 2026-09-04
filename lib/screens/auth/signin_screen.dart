@@ -13,6 +13,7 @@
   import '../../services/fcm_service.dart';
   import '../../widgets/app_loader.dart';
   import '../../widgets/app_snackbar.dart';
+  import '../../utils/deleted_account_handler.dart';
 
 
   class SignInScreen extends StatefulWidget {
@@ -65,6 +66,11 @@
         );
       } catch (e) {
         if (!mounted) return;
+        if (await handleDeletedAccountError(
+          context, e,
+          identifier: mobile,
+          identifierType: 'mobile',
+        )) return;
         AppSnackbar.showError(context, e is ApiException ? e.message : 'Failed to send OTP. Please try again.');
       } finally {
         if (mounted) setState(() => _loading = false);
@@ -212,6 +218,7 @@
     Future<void> _onGoogleSignIn() async {
       if (_loading) return;
       setState(() => _loading = true);
+      String? signedInEmail;
       try {
         final googleSignIn = GoogleSignIn(
           serverClientId: '571497771274-tc6htq08vmleticvvabgq2e354nbssfc.apps.googleusercontent.com',
@@ -226,6 +233,7 @@
           return;
         }
 
+        signedInEmail = account.email;
         final auth = await account.authentication;
         final idToken = auth.idToken;
         if (idToken == null) throw Exception('Google sign-in failed. Please try again.');
@@ -251,6 +259,11 @@
         );
       } catch (e) {
         if (!mounted) return;
+        if (signedInEmail != null && await handleDeletedAccountError(
+          context, e,
+          identifier: signedInEmail,
+          identifierType: 'email',
+        )) return;
         AppSnackbar.showError(
           context,
           e is ApiException ? e.message : e.toString().replaceAll('Exception: ', ''),
