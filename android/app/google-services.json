@@ -12,7 +12,28 @@
           "package_name": "com.bookplayz.app"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "425131648806-8pug1ac7gau0ioh7rmo0jjicf98p6lvd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bookplayz.app",
+            "certificate_hash": "fce97b0f51ea33a75eeab06f7c28be751a7e5d18"
+          }
+        },
+        {
+          "client_id": "425131648806-arfc534g1pg84spgbpq3iaqih7kd2ugt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bookplayz.app",
+            "certificate_hash": "c539efc92f916f851536c90cd5ee27c80d0bcedc"
+          }
+        },
+        {
+          "client_id": "425131648806-ednnvr67l1n7hsm8tcf8n4cv9l05mts9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCz7pRearrpq0QBS2S9FfcSgqwFuLwWF2c"
@@ -20,7 +41,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "425131648806-ednnvr67l1n7hsm8tcf8n4cv9l05mts9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "425131648806-5u7vfatukj946f5rnapq96rq2ud3vs4t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bookplayz"
+              }
+            }
+          ]
         }
       }
     },
@@ -31,7 +64,12 @@
           "package_name": "com.bookplayz.venue"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "425131648806-ednnvr67l1n7hsm8tcf8n4cv9l05mts9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCz7pRearrpq0QBS2S9FfcSgqwFuLwWF2c"
@@ -39,7 +77,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "425131648806-ednnvr67l1n7hsm8tcf8n4cv9l05mts9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "425131648806-5u7vfatukj946f5rnapq96rq2ud3vs4t.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.bookplayz"
+              }
+            }
+          ]
         }
       }
     }

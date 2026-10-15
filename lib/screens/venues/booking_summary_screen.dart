@@ -208,6 +208,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
       final orderData = await PaymentApi.createOrder({
         'venueId':      widget.venue.id,
         'groundId':     ground.id,
+        'vgsId':        ground.vgsId,
         'bookingDate':  _bookingDate,
         'startTime':    _startTime,
         'endTime':      _endTime,

@@ -221,7 +221,7 @@
       String? signedInEmail;
       try {
         final googleSignIn = GoogleSignIn(
-          serverClientId: '571497771274-tc6htq08vmleticvvabgq2e354nbssfc.apps.googleusercontent.com',
+          serverClientId: '425131648806-ednnvr67l1n7hsm8tcf8n4cv9l05mts9.apps.googleusercontent.com',
         );
 
         // Sign out first so the account picker always shows
@@ -237,7 +237,6 @@
         final auth = await account.authentication;
         final idToken = auth.idToken;
         if (idToken == null) throw Exception('Google sign-in failed. Please try again.');
-
         final deviceToken = await FcmService.instance.getToken();
         final data = await AuthApi.ssoLogin(
           provider: 'google',
