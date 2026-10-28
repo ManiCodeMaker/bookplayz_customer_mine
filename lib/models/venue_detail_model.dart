@@ -1,4 +1,31 @@
+import 'dart:convert';
+
 import 'package:bookplayz/models/venue_model.dart';
+
+int _asInt(dynamic v, [int d = 0]) =>
+    v is int ? v : (v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? d);
+
+double? _asDouble(dynamic v) =>
+    v is num ? v.toDouble() : double.tryParse(v?.toString() ?? '');
+
+bool _asBool(dynamic v) =>
+    v is bool ? v : (v?.toString().toLowerCase() == 'true' || v?.toString() == '1');
+
+String? _asStr(dynamic v) => v?.toString();
+
+List<dynamic> _asList(dynamic v) {
+  if (v is List) return v;
+  if (v is String && v.trim().isNotEmpty) {
+    try {
+      final d = jsonDecode(v);
+      if (d is List) return d;
+    } catch (_) {}
+  }
+  return const [];
+}
+
+Map<String, dynamic> _asMap(dynamic v) =>
+    v is Map ? Map<String, dynamic>.from(v) : <String, dynamic>{};
 
 class VenueDetailModel {
   final int id;
@@ -101,67 +128,61 @@ class VenueDetailModel {
 
   factory VenueDetailModel.fromJson(Map<String, dynamic> j) {
     return VenueDetailModel(
-      id:                    j['id'] as int,
-      ownerId:               j['ownerId'] as int? ?? 0,
-      name:                  j['name'] as String? ?? '',
-      slug:                  j['slug'] as String? ?? '',
-      description:           j['description'] as String?,
-      address:               j['address'] as String? ?? '',
-      city:                  j['city'] as String? ?? '',
-      state:                 j['state'] as String? ?? '',
-      districtName:          j['districtName'] as String?,
-      latitude:              (j['latitude'] as num?)?.toDouble(),
-      longitude:             (j['longitude'] as num?)?.toDouble(),
-      phone:                 j['phone'] as String?,
-      email:                 j['email'] as String?,
-      slotDuration:          j['slotDuration'] as int? ?? 60,
-      openTime:              j['openTime'] as String? ?? '',
-      closeTime:             j['closeTime'] as String? ?? '',
-      advanceBookingDays:    j['advanceBookingDays'] as int? ?? 0,
-      serviceFeeType:        j['serviceFeeType'] as String? ?? '',
-      serviceFeeValue:       double.tryParse(j['serviceFeeValue']?.toString() ?? '0') ?? 0.0,
-      status:                j['status'] as String? ?? '',
-      metaTitle:             j['metaTitle'] as String?,
-      metaDescription:       j['metaDescription'] as String?,
-      rating:                double.tryParse(j['rating']?.toString() ?? '0') ?? 0.0,
-      totalRatings:          j['totalRatings'] as int? ?? 0,
-      totalBookings:         j['totalBookings'] as int? ?? 0,
-      isFeatured:            j['isFeatured'] as bool? ?? false,
-      membership:            j['membership'] as bool? ?? false,
-      bulkOrCorporateBooking: j['bulkOrCorporateBooking'] as bool? ?? false,
-      venueProfileImage:     j['venueProfileImage'] as String?,
-      venueDataId:           j['venueDataId'] as String?,
-      ownerName:             j['ownerName'] as String?,
-      rules:                 (j['rules'] as List<dynamic>? ?? [])
-                               .map((e) => e.toString())
+      id:                    _asInt(j['id']),
+      ownerId:               _asInt(j['ownerId']),
+      name:                  _asStr(j['name']) ?? '',
+      slug:                  _asStr(j['slug']) ?? '',
+      description:           _asStr(j['description']),
+      address:               _asStr(j['address']) ?? '',
+      city:                  _asStr(j['city']) ?? '',
+      state:                 _asStr(j['state']) ?? '',
+      districtName:          _asStr(j['districtName']),
+      latitude:              _asDouble(j['latitude']),
+      longitude:             _asDouble(j['longitude']),
+      phone:                 _asStr(j['phone']),
+      email:                 _asStr(j['email']),
+      slotDuration:          _asInt(j['slotDuration'], 60),
+      openTime:              _asStr(j['openTime']) ?? '',
+      closeTime:             _asStr(j['closeTime']) ?? '',
+      advanceBookingDays:    _asInt(j['advanceBookingDays']),
+      serviceFeeType:        _asStr(j['serviceFeeType']) ?? '',
+      serviceFeeValue:       _asDouble(j['serviceFeeValue']) ?? 0.0,
+      status:                _asStr(j['status']) ?? '',
+      metaTitle:             _asStr(j['metaTitle']),
+      metaDescription:       _asStr(j['metaDescription']),
+      rating:                _asDouble(j['rating']) ?? 0.0,
+      totalRatings:          _asInt(j['totalRatings']),
+      totalBookings:         _asInt(j['totalBookings']),
+      isFeatured:            _asBool(j['isFeatured']),
+      membership:            _asBool(j['membership']),
+      bulkOrCorporateBooking: _asBool(j['bulkOrCorporateBooking']),
+      venueProfileImage:     _asStr(j['venueProfileImage']),
+      venueDataId:           _asStr(j['venueDataId']),
+      ownerName:             _asStr(j['ownerName']),
+      rules:                 _asList(j['rules']).map((e) => e.toString()).toList(),
+      amenities:             _asList(j['amenities'])
+                               .map((e) => VenueDetailAmenityModel.fromJson(_asMap(e)))
                                .toList(),
-      amenities:             (j['amenities'] as List<dynamic>? ?? [])
-                               .map((e) => VenueDetailAmenityModel.fromJson(e as Map<String, dynamic>))
-                               .toList(),
-      categories:            (j['categories'] as List<dynamic>? ?? [])
-                               .map((e) {
-                                 final m = e as Map<String, dynamic>;
+      categories:            _asList(j['categories']).map((e) {
+                                 final m = _asMap(e);
                                  return VenueCategoryModel(
-                                   id:         m['id'] as int,
-                                   categoryId: m['categoryId'] as int,
-                                   name:       m['categoryName'] as String? ?? '',
-                                   image:      m['categoryImage'] as String?,
-                                   color:      m['categoryColor'] as String?,
+                                   id:         _asInt(m['id']),
+                                   categoryId: _asInt(m['categoryId']),
+                                   name:       _asStr(m['categoryName']) ?? '',
+                                   image:      _asStr(m['categoryImage']),
+                                   color:      _asStr(m['categoryColor']),
                                  );
-                               })
-                               .toList(),
-      subcategories:         (j['subcategories'] as List<dynamic>? ?? [])
-                               .map((e) {
-                                 final m = e as Map<String, dynamic>;
+                               }).toList(),
+      subcategories:         _asList(j['subcategories']).map((e) {
+                                 final m = _asMap(e);
                                  return VenueSubcategoryModel(
-                                   id:            m['id'] as int,
-                                   subcategoryId: m['subcategoryId'] as int,
-                                   name:          m['subcategoryName'] as String? ?? '',
+                                   id:            _asInt(m['id']),
+                                   subcategoryId: _asInt(m['subcategoryId']),
+                                   name:          _asStr(m['subcategoryName']) ?? '',
                                  );
-                               })
-                               .toList(),
-      images:                (j['images'] as List<dynamic>? ?? [])
-                               .map((e) => VenueImageModel.fromJson(e as Map<String, dynamic>))
+                               }).toList(),
+      images:                _asList(j['images'])
+                               .map((e) => VenueImageModel.fromJson(_asMap(e)))
                                .toList(),
     );
   }
@@ -186,11 +207,11 @@ class VenueDetailAmenityModel {
 
   factory VenueDetailAmenityModel.fromJson(Map<String, dynamic> j) =>
       VenueDetailAmenityModel(
-        id:        j['id'] as int,
-        amenityId: j['amenityId'] as int,
-        name:      j['name'] as String? ?? '',
-        slug:      j['slug'] as String? ?? '',
-        icon:      j['icon'] as String?,
-        status:    j['status'] as String? ?? '',
+        id:        _asInt(j['id']),
+        amenityId: _asInt(j['amenityId']),
+        name:      _asStr(j['name']) ?? '',
+        slug:      _asStr(j['slug']) ?? '',
+        icon:      _asStr(j['icon']),
+        status:    _asStr(j['status']) ?? '',
       );
 }

@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/venue_model.dart';
@@ -205,7 +206,7 @@ class VenuesScreenState extends State<VenuesScreen> {
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     }
   }

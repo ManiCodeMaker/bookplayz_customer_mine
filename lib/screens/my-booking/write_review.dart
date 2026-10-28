@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'dart:io';
 
 import 'package:bookplayz/api/api_constants.dart';
@@ -172,7 +173,7 @@ class _WriteReviewSheetState extends State<WriteReviewSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e is ApiException ? e.message : e.toString();
+        _error = friendlyError(e);
         _submitting = false;
       });
     }
@@ -272,7 +273,7 @@ class _WriteReviewSheetState extends State<WriteReviewSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e is ApiException ? e.message : e.toString();
+        _error = friendlyError(e);
         _submitting = false;
       });
     }

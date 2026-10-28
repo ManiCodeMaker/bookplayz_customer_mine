@@ -8,7 +8,7 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    GMSServices.provideAPIKey("AIzaSyCaujQPUEKcjgeB_cPqP1_tihRsZ8_foIM")
+    GMSServices.provideAPIKey("AIzaSyBEujSR_V3RtGd7L-MJHMYYmYu85LCVsyE")
     application.registerForRemoteNotifications()
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }

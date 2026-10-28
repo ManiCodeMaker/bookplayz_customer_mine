@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/models/venue_model.dart';
@@ -54,7 +55,7 @@ class _FavScreenState extends State<FavScreen> {
 
       if (mounted) setState(() { _venues = favVenues; _loading = false; });
     } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+      if (mounted) setState(() { _error = friendlyError(e); _loading = false; });
     }
   }
 

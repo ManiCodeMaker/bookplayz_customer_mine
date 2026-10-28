@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/api/session_manager.dart';
@@ -109,8 +110,9 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
     try {
       final desc = await BookingApi.bookingDescription(widget.request);
       if (mounted) setState(() { _desc = desc; _loading = false; });
-    } catch (e) {
-      if (mounted) setState(() { _error = e.toString(); _loading = false; });
+    } catch (e, st) {
+      debugPrint('Booking description failed: $e\n$st');
+      if (mounted) setState(() { _error = friendlyError(e); _loading = false; });
     }
   }
 
@@ -140,19 +142,47 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
     return _desc!.pricing.minPricePerHour * duration;
   }
 
-  double get _serviceFee {
-    if (_desc == null) return 0;
-    if (_desc!.venue.serviceFeeType == 'percentage') {
-      return _slotCost * _desc!.venue.serviceFeeValue / 100;
+  // ── Automatic venue discount (best applicable one, same as web) ──
+  Map<String, dynamic>? get _autoDiscount {
+    if (_desc == null) return null;
+    for (final d in _desc!.discounts) {
+      if (d is Map && d['id'] != null) return Map<String, dynamic>.from(d);
     }
-    return _desc!.venue.serviceFeeValue;
+    return null;
+  }
+
+  int? get _autoDiscountId {
+    final id = _autoDiscount?['id'];
+    return id is num ? id.toInt() : int.tryParse(id?.toString() ?? '');
+  }
+
+  // Mirrors backend calcDiscountAmount (flat capped at price, else percentage).
+  double get _slotDiscount {
+    final d = _autoDiscount;
+    if (d == null) return 0;
+    final value = double.tryParse(d['discountValue']?.toString() ?? '') ?? 0;
+    final base = _slotCost.toDouble();
+    final amt = d['discountType'] == 'flat' ? value : base * value / 100;
+    return double.parse(amt.clamp(0, base).toStringAsFixed(2));
   }
 
   double get _couponDiscount =>
       (_appliedCoupon?['discountAmount'] as num?)?.toDouble() ?? 0;
 
+  // Service fee is charged on the amount after discount + coupon (matches backend).
+  double get _serviceFee {
+    if (_desc == null) return 0;
+    final base = (_slotCost - _slotDiscount - _couponDiscount).clamp(0, double.infinity);
+    if (_desc!.venue.serviceFeeType == 'percentage') {
+      return (base * _desc!.venue.serviceFeeValue / 100).roundToDouble();
+    }
+    return _desc!.venue.serviceFeeValue;
+  }
+
   int get _totalAmount =>
-      (_slotCost + _serviceFee - _couponDiscount).toInt().clamp(0, 999999);
+      (_slotCost - _slotDiscount - _couponDiscount + _serviceFee)
+          .toInt()
+          .clamp(0, 999999);
 
   // ── Advance payment ──
   BookingDescGroundPrice? get _groundPricing {
@@ -215,6 +245,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
         'paymentMethod': 'online',
         'paymentType':  _isAdvancePayment ? 'part' : 'full',
         if (_appliedCoupon != null) 'couponCode': _appliedCoupon!['code'],
+        if (_autoDiscountId != null) 'discountId': _autoDiscountId,
       });
 
       final gatewayConfig = orderData['gatewayConfig'] as Map<String, dynamic>?;
@@ -257,7 +288,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
         }
         _showError('Slot is temporarily locked. Please go back and choose a different slot.');
       } else {
-        _showError(msg.replaceAll('Exception: ', ''));
+        _showError(friendlyError(e));
       }
       if (mounted) setState(() => _paymentLoading = false);
     }
@@ -286,6 +317,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
         groundId:     ground.id,
         couponCode:   _appliedCoupon?['code'] as String?,
         couponDiscountAmount: _couponDiscount > 0 ? _couponDiscount : null,
+        discountId:   _autoDiscountId,
       );
       _bookingId = createdId;
 
@@ -374,9 +406,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _couponError = e is ApiException
-              ? e.message
-              : e.toString().replaceAll('Exception: ', '');
+          _couponError = friendlyError(e);
           _couponLoading = false;
           _appliedCoupon = null;
         });
@@ -692,6 +722,15 @@ Widget _buildPaymentContent() {
         _CostRow(label: 'Slot Cost',
             value: '₹${_slotCost.toStringAsFixed(2)}'),
         const SizedBox(height: 12),
+        if (_slotDiscount > 0) ...[
+          _buildAutoDiscountCard(),
+          const SizedBox(height: 12),
+          _CostRow(
+            label: 'Slot discount',
+            value: '- ₹${_slotDiscount.toStringAsFixed(2)}',
+            highlight: true),
+          const SizedBox(height: 12),
+        ],
         if (_serviceFee > 0) ...[
           _CostRow(
             label: 'Service Fee (${desc.venue.serviceFeeValue.toStringAsFixed(0)}%)',
@@ -762,6 +801,55 @@ Widget _buildPaymentContent() {
           ),
         ),
       ]),
+    );
+  }
+
+  Widget _buildAutoDiscountCard() {
+    final d = _autoDiscount!;
+    final name = d['name']?.toString() ?? 'Special Offer';
+    final desc = d['description']?.toString() ?? '';
+    final isFlat = d['discountType'] == 'flat';
+    final value = double.tryParse(d['discountValue']?.toString() ?? '') ?? 0;
+    final pct = isFlat ? '' : ' (${value.toStringAsFixed(value % 1 == 0 ? 0 : 2)}% off)';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.limeGreen.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.limeGreen.withValues(alpha: 0.4)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.limeGreen,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: const Text('DISCOUNT APPLIED',
+                  style: TextStyle(fontFamily: 'Inter', fontSize: 10,
+                      fontWeight: FontWeight.w800, color: Colors.white)),
+            ),
+          ]),
+          const SizedBox(height: 8),
+          Text(name,
+              style: const TextStyle(fontFamily: 'Jost', fontSize: 15,
+                  fontWeight: FontWeight.w700, color: Colors.white)),
+          if (desc.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Text(desc,
+                style: TextStyle(fontFamily: 'Inter', fontSize: 12, height: 1.4,
+                    color: Colors.white.withValues(alpha: 0.65))),
+          ],
+          const SizedBox(height: 8),
+          Text('Save ₹${_slotDiscount.toStringAsFixed(0)}$pct',
+              style: const TextStyle(fontFamily: 'Inter', fontSize: 13,
+                  fontWeight: FontWeight.w700, color: AppColors.limeGreen)),
+        ],
+      ),
     );
   }
 
@@ -1417,7 +1505,8 @@ class _PaymentOptionCard extends StatelessWidget {
 class _CostRow extends StatelessWidget {
   final String label;
   final String value;
-  const _CostRow({required this.label, required this.value});
+  final bool highlight;
+  const _CostRow({required this.label, required this.value, this.highlight = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1425,9 +1514,12 @@ class _CostRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(label, style: TextStyle(fontFamily: 'Inter', fontSize: 14,
-            color: Colors.white.withValues(alpha: 0.75))),
+            color: highlight
+                ? AppColors.limeGreen
+                : Colors.white.withValues(alpha: 0.75))),
         Text(value, style: TextStyle(fontFamily: 'Inter', fontSize: 14,
-            fontWeight: FontWeight.w600, color: Colors.white)),
+            fontWeight: FontWeight.w600,
+            color: highlight ? AppColors.limeGreen : Colors.white)),
       ],
     );
   }

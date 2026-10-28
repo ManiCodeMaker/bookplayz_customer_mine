@@ -96,46 +96,82 @@ class BookingGroundModel {
                               j['pricePerHour']?.toString() ?? '0') ?? 0,
         pricePerPerson:   double.tryParse(
                               j['pricePerPerson']?.toString() ?? '0') ?? 0,
-        minBookingSlots:  j['minBookingSlots'] as int? ?? 1,
-        maxCapacity:      j['maxCapacity'] as int?,
+        minBookingSlots:  (j['minBookingSlots'] as num?)?.toInt() ?? 1,
+        maxCapacity:      (j['maxCapacity'] as num?)?.toInt(),
         vgsStatus:        j['vgsStatus'] as String? ?? '',
       );
 }
 
 // ── Availability response ──
+/// A booked / blocked time range in minutes from midnight, [startMin, endMin).
+class UnavailableRange {
+  final int startMin;
+  final int endMin;
+  const UnavailableRange(this.startMin, this.endMin);
+}
+
 class GroundAvailabilityModel {
   final int venueId;
   final String date;
   final int groundId;
-  final List<String> unavailableSlots; // e.g. ["12:00", "16:00"]
+  final List<String> unavailableSlots; // start times, e.g. ["12:00", "16:00"]
+  // Full ranges — a 3-hour block is ONE entry (10:00–13:00), so checking only
+  // start times would leave the 2nd and 3rd hour bookable.
+  final List<UnavailableRange> ranges;
 
   const GroundAvailabilityModel({
     required this.venueId,
     required this.date,
     required this.groundId,
     required this.unavailableSlots,
+    this.ranges = const [],
   });
+
+  static int _toMin(String t) {
+    final p = t.split(':');
+    if (p.length < 2) return 0;
+    return (int.tryParse(p[0]) ?? 0) * 60 + (int.tryParse(p[1]) ?? 0);
+  }
+
+  /// True when the slot starting at [slot] ("HH:MM", lasting [slotDuration]
+  /// minutes) overlaps any booked or blocked range.
+  bool isSlotUnavailable(String slot, int slotDuration) {
+    final s = _toMin(slot);
+    final e = s + slotDuration;
+    return ranges.any((r) => s < r.endMin && e > r.startMin);
+  }
 
   factory GroundAvailabilityModel.fromJson(Map<String, dynamic> j) {
     final rawSlots = j['unavailableSlots'] as List<dynamic>? ?? [];
-    final slots = rawSlots.map((e) {
+    final slots = <String>[];
+    final ranges = <UnavailableRange>[];
+
+    for (final e in rawSlots) {
       if (e is String) {
-        // old format: "12:00"
-        return e;
+        // old format: "12:00" — start only, treat as a single minute marker
+        if (e.isEmpty) continue;
+        slots.add(e);
+        final s = _toMin(e);
+        ranges.add(UnavailableRange(s, s + 1));
       } else if (e is Map<String, dynamic>) {
-        // new format: { startTime: "12:00:00", ... }
+        // new format: { startTime: "12:00:00", endTime: "15:00:00", ... }
         final start = e['startTime'] as String? ?? '';
-        // return "HH:MM" only
-        return start.length >= 5 ? start.substring(0, 5) : start;
+        if (start.isEmpty) continue;
+        final end = e['endTime'] as String? ?? '';
+        slots.add(start.length >= 5 ? start.substring(0, 5) : start);
+        final s = _toMin(start);
+        var en = end.isEmpty ? s + 60 : _toMin(end);
+        if (en <= s) en += 24 * 60; // range ending at/after midnight ("00:00")
+        ranges.add(UnavailableRange(s, en));
       }
-      return '';
-    }).where((s) => s.isNotEmpty).toList();
+    }
 
     return GroundAvailabilityModel(
       venueId:          j['venueId'] as int,
       date:             j['date'] as String? ?? '',
       groundId:         j['groundId'] as int,
       unavailableSlots: slots,
+      ranges:           ranges,
     );
   }
 }
@@ -232,7 +268,7 @@ class BookingDescVenue {
         primaryImage:     j['primaryImage'] as String?,
         openTime:         j['openTime'] as String? ?? '',
         closeTime:        j['closeTime'] as String? ?? '',
-        slotDuration:     j['slotDuration'] as int? ?? 60,
+        slotDuration:     (j['slotDuration'] as num?)?.toInt() ?? 60,
         serviceFeeType:   j['serviceFeeType'] as String? ?? '',
         serviceFeeValue:  double.tryParse(
                               j['serviceFeeValue']?.toString() ?? '0') ?? 0,
@@ -304,7 +340,7 @@ class BookingDescTiming {
         raw:           j['raw'] as String? ?? '',
         startTime:     j['startTime'] as String? ?? '',
         endTime:       j['endTime'] as String? ?? '',
-        durationHours: j['durationHours'] as int? ?? 1,
+        durationHours: (j['durationHours'] as num?)?.toInt() ?? 1,
       );
 }
 
@@ -328,10 +364,10 @@ class BookingDescPricing {
   factory BookingDescPricing.fromJson(Map<String, dynamic> j) {
     final summary = j['summary'] as Map<String, dynamic>? ?? {};
     return BookingDescPricing(
-      minPricePerHour: summary['minPricePerHour'] as int? ?? 0,
-      maxPricePerHour: summary['maxPricePerHour'] as int? ?? 0,
-      groundCount:     summary['groundCount'] as int? ?? 0,
-      durationHours:   summary['durationHours'] as int? ?? 1,
+      minPricePerHour: (summary['minPricePerHour'] as num?)?.round() ?? 0,
+      maxPricePerHour: (summary['maxPricePerHour'] as num?)?.round() ?? 0,
+      groundCount:     (summary['groundCount'] as num?)?.toInt() ?? 0,
+      durationHours:   (summary['durationHours'] as num?)?.toInt() ?? 1,
       note:            summary['note'] as String? ?? '',
       perGround:       (j['perGround'] as List<dynamic>? ?? [])
                          .map((e) => BookingDescGroundPrice.fromJson(
@@ -370,13 +406,13 @@ class BookingDescGroundPrice {
       BookingDescGroundPrice(
         groundId:        j['groundId'] as int,
         groundName:      j['groundName'] as String? ?? '',
-        pricePerHour:    j['pricePerHour'] as int? ?? 0,
-        pricePerPerson:  j['pricePerPerson'] as int? ?? 0,
-        minBookingSlots: j['minBookingSlots'] as int? ?? 1,
-        maxCapacity:     j['maxCapacity'] as int?,
-        basePrice:       j['basePrice'] as int? ?? 0,
+        pricePerHour:    (j['pricePerHour'] as num?)?.round() ?? 0,
+        pricePerPerson:  (j['pricePerPerson'] as num?)?.round() ?? 0,
+        minBookingSlots: (j['minBookingSlots'] as num?)?.toInt() ?? 1,
+        maxCapacity:     (j['maxCapacity'] as num?)?.toInt(),
+        basePrice:       (j['basePrice'] as num?)?.round() ?? 0,
         allowPartPayment:       j['allowPartPayment'] as bool? ?? false,
-        advancePaymentPercent:  j['advancePaymentPercent'] as int? ?? 30,
-        advancePaymentAmount:   j['advancePaymentAmount'] as int?,
+        advancePaymentPercent:  (j['advancePaymentPercent'] as num?)?.toInt() ?? 30,
+        advancePaymentAmount:   (j['advancePaymentAmount'] as num?)?.ceil(),
       );
 }

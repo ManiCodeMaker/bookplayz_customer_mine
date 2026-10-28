@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:flutter/material.dart';
@@ -42,7 +43,7 @@ class _CancellationSheetState extends State<CancellationSheet> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+          SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
         );
         setState(() => _cancelling = false);
       }
@@ -340,7 +341,7 @@ Future<void> showCancellationSheet({
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString()), backgroundColor: Colors.red),
+        SnackBar(content: Text(friendlyError(e)), backgroundColor: Colors.red),
       );
     }
   } finally {

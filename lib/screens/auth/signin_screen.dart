@@ -9,6 +9,7 @@
   import 'package:flutter_svg/flutter_svg.dart';
   import '../../api/api_constants.dart';
   import '../../api/api_service.dart';
+  import '../../utils/friendly_error.dart';
   import '../../api/session_manager.dart';
   import '../../services/fcm_service.dart';
   import '../../widgets/app_loader.dart';
@@ -265,7 +266,7 @@
         )) return;
         AppSnackbar.showError(
           context,
-          e is ApiException ? e.message : e.toString().replaceAll('Exception: ', ''),
+          friendlyError(e),
         );
       } finally {
         if (mounted) setState(() => _loading = false);

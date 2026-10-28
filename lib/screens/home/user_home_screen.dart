@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/api/session_manager.dart';
 import 'package:bookplayz/api/api_constants.dart';
@@ -186,7 +187,7 @@ Future<void> _toggleFavorite(int venueId) async {
       if (!mounted) return;
       setState(() {
         _venuesLoading = false;
-        _venuesError = e.toString();
+        _venuesError = friendlyError(e);
       });
     }
   }
@@ -303,7 +304,19 @@ Future<void> _toggleFavorite(int venueId) async {
             )
           else if (_venuesError != null)
             SliverToBoxAdapter(
-              child: EmptyVenueState(message: _venuesError!),
+              child: EmptyVenueState(
+                message: _venuesError!,
+                // "Select a city" is a hint, not a failure — only real errors retry.
+                onRetry: _venuesError == 'Select a city to see venues near you'
+                    ? null
+                    : () {
+                        setState(() {
+                          _venuesLoading = true;
+                          _venuesError = null;
+                        });
+                        _loadVenues();
+                      },
+              ),
             )
           else if (_venues.isEmpty)
             SliverToBoxAdapter(

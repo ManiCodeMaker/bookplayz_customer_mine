@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -107,7 +108,7 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = friendlyError(e);
         _loading = false;
       });
     }

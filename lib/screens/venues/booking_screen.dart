@@ -13,11 +13,14 @@ import 'package:flutter/services.dart';
 class BookingScreen extends StatefulWidget {
   final VenueDetailModel venue;
   final VoidCallback? onMyBookings;
+  // Category chip the user had selected on the venue screen (0 = first).
+  final int initialCategoryIndex;
 
   const BookingScreen({
     super.key,
     required this.venue,
     this.onMyBookings,
+    this.initialCategoryIndex = 0,
   });
 
   @override
@@ -61,9 +64,12 @@ class _BookingScreenState extends State<BookingScreen> {
       final now = DateTime.now();
       return DateTime(now.year, now.month, now.day + i);
     });
-    // Auto-load first category
-    if (widget.venue.categories.isNotEmpty) {
-      _loadSubcategories(widget.venue.categories[0]);
+    // Auto-load the category picked on the venue screen (first by default)
+    final cats = widget.venue.categories;
+    if (cats.isNotEmpty) {
+      _selectedCategoryIndex =
+          widget.initialCategoryIndex.clamp(0, cats.length - 1);
+      _loadSubcategories(cats[_selectedCategoryIndex]);
     }
   }
 
@@ -184,9 +190,13 @@ class _BookingScreenState extends State<BookingScreen> {
   }
 
   // ── Slot tap — consecutive selection only ──
+  // A slot is unavailable if it overlaps ANY booked/blocked range, not just
+  // when it starts exactly at the range's start time.
+  bool _isUnavailable(String slot) =>
+      _availability?.isSlotUnavailable(slot, widget.venue.slotDuration) ?? false;
+
   void _onSlotTap(String slot) {
-    final unavailable = _availability?.unavailableSlots ?? [];
-    if (unavailable.contains(slot)) return;
+    if (_isUnavailable(slot)) return;
 
     setState(() {
       if (_selectedSlots.isEmpty) {
@@ -207,7 +217,7 @@ class _BookingScreenState extends State<BookingScreen> {
         final tapIdx = allSlots.indexOf(slot);
         if (tapIdx == lastIdx + 1) {
           // Check not unavailable
-          if (!unavailable.contains(slot)) {
+          if (!_isUnavailable(slot)) {
             _selectedSlots = [..._selectedSlots, slot];
           }
         } else {
@@ -877,7 +887,6 @@ class _BookingScreenState extends State<BookingScreen> {
   // ── Time slots — dark theme ──
   Widget _buildTimeSlots() {
     final allSlots = _generateSlots();
-    final unavailable = _availability?.unavailableSlots ?? [];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -898,7 +907,7 @@ class _BookingScreenState extends State<BookingScreen> {
           runSpacing: 8,
           children: allSlots.map((slot) {
             final isSelected = _selectedSlots.contains(slot);
-            final isUnavailable = unavailable.contains(slot);
+            final isUnavailable = _isUnavailable(slot);
 
             Color bgColor;
             Color borderColor;

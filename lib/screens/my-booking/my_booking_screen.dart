@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/api_service.dart';
 import 'package:bookplayz/api/session_manager.dart';
@@ -75,7 +76,7 @@ class MyBookingScreenState extends State<MyBookingScreen> {
       }
     } catch (e) {
       debugPrint('[MyBookings] Error: $e');
-      if (mounted) setState(() { _loading = false; _loadError = e.toString(); });
+      if (mounted) setState(() { _loading = false; _loadError = friendlyError(e); });
     }
   }
 
@@ -455,7 +456,7 @@ class _BookingCardState extends State<_BookingCard> {
       if (mounted) {
         setState(() => _payingBalance = false);
         AppSnackbar.showError(
-            context, e.toString().replaceAll('Exception: ', ''));
+            context, friendlyError(e));
       }
     }
   }

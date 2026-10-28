@@ -495,6 +495,7 @@ class PaymentApi {
     int? groundId,
     String? couponCode,
     double? couponDiscountAmount,
+    int? discountId,
   }) async {
     final payload = <String, dynamic>{
       'venueId':         venueId,
@@ -514,6 +515,7 @@ class PaymentApi {
       payload['couponCode'] = couponCode;
       payload['couponDiscountAmount'] = couponDiscountAmount;
     }
+    if (discountId != null) payload['discountId'] = discountId;
 
     final res = await ApiService.instance.post(
       '${ApiConstants.baseUrl}/bookings',

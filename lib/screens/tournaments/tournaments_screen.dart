@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/models/tournament_model.dart';
 import 'package:bookplayz/theme/app_theme.dart';
@@ -87,7 +88,7 @@ class _TournamentsScreenState extends State<TournamentsScreen> {
     } catch (e) {
       setState(() {
         _loading = false;
-        _error = e.toString();
+        _error = friendlyError(e);
       });
     }
   }

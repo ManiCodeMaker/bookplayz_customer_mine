@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:flutter/material.dart';
 import '../../api/api_constants.dart';
 import '../../api/api_service.dart';
@@ -140,7 +141,7 @@ class _AccountRecoveryOtpScreenState extends State<AccountRecoveryOtpScreen>
       if (!mounted) return;
       for (final c in _controllers) { c.clear(); }
       _focusNodes[0].requestFocus();
-      AppSnackbar.showError(context, e is ApiException ? e.message : e.toString());
+      AppSnackbar.showError(context, friendlyError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -213,7 +214,7 @@ class _AccountRecoveryOtpScreenState extends State<AccountRecoveryOtpScreen>
       AppSnackbar.showSuccess(context, 'OTP resent successfully');
     } catch (e) {
       if (!mounted) return;
-      AppSnackbar.showError(context, e is ApiException ? e.message : e.toString());
+      AppSnackbar.showError(context, friendlyError(e));
     }
   }
 

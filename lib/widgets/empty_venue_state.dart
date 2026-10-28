@@ -1,11 +1,15 @@
 import 'package:bookplayz/theme/app_theme.dart';
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'package:flutter/material.dart';
 
 class EmptyVenueState extends StatelessWidget {
   final String? city;
   final String? message;
+  // When set, shows an error state (icon + Try again button) instead of the
+  // "choose your city" hint.
+  final VoidCallback? onRetry;
 
-  const EmptyVenueState({super.key, this.city, this.message});
+  const EmptyVenueState({super.key, this.city, this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -22,8 +26,12 @@ class EmptyVenueState extends StatelessWidget {
               color: AppColors.limeGreen.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.stadium_outlined,
+            child: Icon(
+              onRetry == null
+                  ? Icons.stadium_outlined
+                  : (message == kOfflineMessage
+                      ? Icons.wifi_off_rounded
+                      : Icons.error_outline_rounded),
               color: AppColors.limeGreen,
               size: 40,
             ),
@@ -40,18 +48,34 @@ class EmptyVenueState extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            hasCity
-                ? 'There are no listed venues in $city yet.\nTry selecting a different city.'
-                : 'Tap the location bar above\nto choose your city.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontFamily: 'Inter',
-              fontSize: 13,
-              color: AppColors.white.withValues(alpha: 0.45),
-              height: 1.5,
+          if (onRetry != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: ElevatedButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh_rounded, size: 18),
+                label: const Text('Try again'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.limeGreen,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            )
+          else
+            Text(
+              hasCity
+                  ? 'There are no listed venues in $city yet.\nTry selecting a different city.'
+                  : 'Tap the location bar above\nto choose your city.',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 13,
+                color: AppColors.white.withValues(alpha: 0.45),
+                height: 1.5,
+              ),
             ),
-          ),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:bookplayz/utils/friendly_error.dart';
 import 'dart:async';
 import 'package:bookplayz/api/api_constants.dart';
 import 'package:bookplayz/api/session_manager.dart';
@@ -98,10 +99,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         });
       _fetchReviews(v.id);
       _fetchEvents(v.id);
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('Venue load failed (${widget.slug}): $e\n$st');
       if (mounted)
         setState(() {
-          _error = e.toString();
+          _error = friendlyError(e);
           _loading = false;
         });
     }
@@ -124,7 +126,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _reviewsError = e.toString();
+          _reviewsError = friendlyError(e);
           _reviewsLoading = false;
         });
       }
@@ -1232,6 +1234,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
             MaterialPageRoute(
               builder: (_) => BookingScreen(
                 venue: v,
+                initialCategoryIndex: _activeCategory < 0 ? 0 : _activeCategory,
                 onMyBookings: () {
                   Navigator.of(context).popUntil((route) => route.isFirst);
                   WidgetsBinding.instance.addPostFrameCallback((_) {
