@@ -307,7 +307,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                     const SizedBox(height: 20),
                     _buildLocation(v),
                     const SizedBox(height: 20),
-                    _buildCategories(v.categories),
+                    _buildCategories(v),
                     const SizedBox(height: 20),
                     _buildAmenities(v.amenities),
                     const SizedBox(height: 20),
@@ -448,7 +448,7 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
                   SharePlus.instance.share(
                     ShareParams(
                       text:
-                          'Book ${v.name} on BookPlayZ!\nhttps://bookplayz.com/venues/${v.slug}',
+                          'Book ${v.name} on BookPlayZ!\nhttps://bookplayz.com/venue/${v.slug}',
                       subject: v.name,
                     ),
                   );
@@ -549,7 +549,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
   }
 
   // ── Sport categories ──
-  Widget _buildCategories(List<VenueCategoryModel> categories) {
+  Widget _buildCategories(VenueDetailModel v) {
+    final categories = v.categories;
     if (categories.isEmpty) return const SizedBox.shrink();
 
     final sports = categories
@@ -575,7 +576,11 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         SportFilterRow(
           sports: sports,
           activeIndex: _activeCategory,
-          onChanged: (i) => setState(() => _activeCategory = i),
+          // Tapping a sport opens the booking screen for that sport.
+          onChanged: (i) {
+            setState(() => _activeCategory = i);
+            _openBooking(v, i);
+          },
           // Dark bg — use default dark-bg colors (no overrides needed)
         ),
       ],
@@ -1208,6 +1213,25 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
     );
   }
 
+  // Opens the booking screen with the given category preselected.
+  void _openBooking(VenueDetailModel v, int categoryIndex) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BookingScreen(
+          venue: v,
+          initialCategoryIndex: categoryIndex,
+          onMyBookings: () {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              UserShellScreen.onNavigateToMyBookings?.call();
+            });
+          },
+        ),
+      ),
+    );
+  }
+
   // ── Book Now ──
   Widget _buildBookNow(VenueDetailModel v) {
     return Container(
@@ -1228,23 +1252,8 @@ class _VenueDetailScreenState extends State<VenueDetailScreen> {
         ],
       ),
       child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BookingScreen(
-                venue: v,
-                initialCategoryIndex: _activeCategory < 0 ? 0 : _activeCategory,
-                onMyBookings: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    UserShellScreen.onNavigateToMyBookings?.call();
-                  });
-                },
-              ),
-            ),
-          );
-        },
+        onTap: () =>
+            _openBooking(v, _activeCategory < 0 ? 0 : _activeCategory),
         child: Container(
           height: 54,
           decoration: BoxDecoration(

@@ -25,31 +25,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
  Future<void> _load() async {
   try {
-    final ids = SessionManager.instance.favoriteIds.value;
-    debugPrint('── Wishlist IDs: $ids ──');
-    if (ids.isEmpty) {
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
-
-    final lat = SessionManager.instance.latitude;
-    final lng = SessionManager.instance.longitude;
-
-    if (lat == null || lng == null) {
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
-
-    // Fetch all venues via search and filter by favorite IDs
-    final result = await VenueApi.search(
-      latitude: lat,
-      longitude: lng,
-      limit: 100,
-    );
-
-    final wishlistVenues = result.venues
-        .where((v) => ids.contains(v.id))
-        .toList();
+    // From the server, wherever the venue is — not limited to nearby ones.
+    final wishlistVenues = await FavoritesApi.fetchVenues();
 
     debugPrint('── Wishlist venues: ${wishlistVenues.length} ──');
 

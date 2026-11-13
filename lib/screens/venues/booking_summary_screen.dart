@@ -110,6 +110,7 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
     try {
       final desc = await BookingApi.bookingDescription(widget.request);
       if (mounted) setState(() { _desc = desc; _loading = false; });
+      await _resolveDiscount(desc);
     } catch (e, st) {
       debugPrint('Booking description failed: $e\n$st');
       if (mounted) setState(() { _error = friendlyError(e); _loading = false; });
@@ -143,12 +144,36 @@ class _BookingSummaryScreenState extends State<BookingSummaryScreen> {
   }
 
   // ── Automatic venue discount (best applicable one, same as web) ──
-  Map<String, dynamic>? get _autoDiscount {
-    if (_desc == null) return null;
-    for (final d in _desc!.discounts) {
-      if (d is Map && d['id'] != null) return Map<String, dynamic>.from(d);
+  // Resolved for the SELECTED booking date/time/ground (not today), so the
+  // discount shown is the one the server will accept when the order is created.
+  Map<String, dynamic>? _resolvedDiscount;
+
+  Map<String, dynamic>? get _autoDiscount => _resolvedDiscount;
+
+  Future<void> _resolveDiscount(BookingDescriptionModel desc) async {
+    try {
+      final q = <String, String>{
+        'venueId':            '${widget.venue.id}',
+        'bookingDate':        _bookingDate,
+        'venueCategoryId':    '${widget.request.categoryId}',
+        'venueSubcategoryId': '${desc.subCategory.venueSubcategoryId}',
+        'bookingStartTime':   _startTime,
+        'bookingEndTime':     _endTime,
+        if (widget.selectedGround != null)
+          'groundId': '${widget.selectedGround!.id}',
+      };
+      final res = await ApiService.instance.get(
+        '${ApiConstants.baseUrl}/discounts/resolve?${Uri(queryParameters: q).query}',
+      );
+      final d = (res['data'] as Map<String, dynamic>?)?['discount'];
+      if (mounted) {
+        setState(() => _resolvedDiscount =
+            d is Map ? Map<String, dynamic>.from(d) : null);
+      }
+    } catch (e) {
+      // A failed lookup just means no discount is applied — never block booking.
+      debugPrint('Discount resolve failed: $e');
     }
-    return null;
   }
 
   int? get _autoDiscountId {

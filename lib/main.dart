@@ -88,7 +88,7 @@ class BookPlayZApp extends StatelessWidget {
 
       // ── Deep link handler ──
       // Handles:
-      //   https://bookplayz.com/venues/{slug}   ← shared link / web
+      //   https://bookplayz.com/venue/{slug}    ← shared link / web (also legacy /venues/{slug})
       //   bookplayz://venues/{slug}              ← custom scheme
       onGenerateRoute: (settings) {
         final name = settings.name ?? '';
@@ -98,7 +98,7 @@ class BookPlayZApp extends StatelessWidget {
           final segments = uri.pathSegments;
 
           // /venues/{slug}  OR  bookplayz://venues/{slug}
-          if (segments.length >= 2 && segments[0] == 'venues') {
+          if (segments.length >= 2 && (segments[0] == 'venue' || segments[0] == 'venues')) {
             final slug = segments[1];
             if (slug.isNotEmpty) {
               return MaterialPageRoute(

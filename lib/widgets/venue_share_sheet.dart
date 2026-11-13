@@ -9,7 +9,7 @@ class VenueShareSheet extends StatelessWidget {
 
   const VenueShareSheet({super.key, required this.venue});
 
-  String get _venueUrl => 'https://bookplayz.com/venues/${venue.slug}';
+  String get _venueUrl => 'https://bookplayz.com/venue/${venue.slug}';
   String get _shareText => 'Book ${venue.name} on BookPlayZ!\n$_venueUrl';
 
   static void show(BuildContext context, VenueDetailModel venue) {

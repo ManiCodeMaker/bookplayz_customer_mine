@@ -43,12 +43,46 @@ class _SearchScreenState extends State<SearchScreen> {
     _scrollCtrl.addListener(_onScroll);
     _searchCtrl.addListener(_onTextChanged);
     _loadVenueCache();
+    _loadSportOptions();
   }
 
-  Future<void> _loadVenueCache() async {
+  // Venues used for the instant name suggestions. Limited to the selected
+  // location so typing never suggests venues from other cities.
+  Future<void> _loadVenueCache({String? city}) async {
     try {
-      final result = await VenueApi.fetchAll(limit: 100);
+      final loc = city ?? SessionManager.instance.city;
+      final lat = SessionManager.instance.latitude;
+      final lng = SessionManager.instance.longitude;
+      final VenueSearchResult result;
+      if (loc != null && loc.isNotEmpty) {
+        result = await VenueApi.searchByCity(city: loc, limit: 100);
+      } else if (lat != null && lng != null) {
+        result = await VenueApi.search(
+            latitude: lat, longitude: lng, limit: 100, radius: 30);
+      } else {
+        result = await VenueApi.fetchAll(limit: 100);
+      }
       if (mounted) setState(() => _venueCache = result.venues);
+    } catch (_) {}
+  }
+
+  // Sports that have live venues (server list), so the Sport filter always
+  // offers every sport rather than only those in the current results.
+  bool _sportsFromServer = false;
+  Future<void> _loadSportOptions() async {
+    try {
+      final list = await VenueApi.fetchSportFilters();
+      if (!mounted) return;
+      setState(() {
+        _sportOptions = list
+            .map((c) => _SportOption(
+                  categoryId: c['id'] as int,
+                  name: (c['name'] as String?) ?? '',
+                  image: c['image'] as String?,
+                ))
+            .toList();
+        _sportsFromServer = true;
+      });
     } catch (_) {}
   }
 
@@ -125,6 +159,7 @@ class _SearchScreenState extends State<SearchScreen> {
     _searchCtrl.removeListener(_onTextChanged);
     _focusNode.unfocus();
     SessionManager.instance.saveCity(city);
+    _loadVenueCache(city: city); // suggestions follow the newly chosen city
 
     setState(() {
       _recentSearches.remove(city);
@@ -153,21 +188,25 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _fetchVenues({required String city, int page = 1}) async {
     final lat = SessionManager.instance.latitude;
     final lng = SessionManager.instance.longitude;
+    final categoryId = int.tryParse(_selectedCategoryId ?? '');
 
-    if (lat == null || lng == null) {
-      setState(() => _state = _SearchState.error);
-      return;
-    }
-  print('DEBUG search lat: $lat, lng: $lng, city: $city');
     try {
-      final result = await VenueApi.search(
-        latitude: lat,
-        longitude: lng,
-        page: page,
-        limit: 12,
-        city: city,
-      );
-      print('DEBUG distance: ${result.venues.first.distance}');
+      // The city always drives the results; GPS is only used for distance.
+      final result = (lat != null && lng != null)
+          ? await VenueApi.search(
+              latitude: lat,
+              longitude: lng,
+              page: page,
+              limit: 12,
+              city: city,
+              categoryId: categoryId,
+            )
+          : await VenueApi.searchByCity(
+              city: city,
+              page: page,
+              limit: 12,
+              categoryId: categoryId,
+            );
       setState(() {
         if (page == 1) {
           _allVenues = result.venues;
@@ -179,8 +218,6 @@ class _SearchScreenState extends State<SearchScreen> {
         _state = _SearchState.results;
         _buildSportOptions();
         _applyFilters();
-        print('DEBUG search raw distance: ${result.venues.first.distance}');
-
       });
     } catch (_) {
       setState(() => _state = _SearchState.error);
@@ -195,6 +232,7 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   void _buildSportOptions() {
+    if (_sportsFromServer) return; // server list is already complete
     final seen = <int>{};
     final options = <_SportOption>[];
     for (final v in _allVenues) {
@@ -250,6 +288,15 @@ class _SearchScreenState extends State<SearchScreen> {
             _applyFilters();
           });
           Navigator.pop(context);
+          // Re-query so the filter covers every page, not just loaded ones.
+          if (_selectedCity != null) {
+            setState(() {
+              _state = _SearchState.loading;
+              _currentPage = 1;
+              _allVenues = [];
+            });
+            _fetchVenues(city: _selectedCity!, page: 1);
+          }
         },
       ),
     );

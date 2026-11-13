@@ -29,30 +29,8 @@ class _FavScreenState extends State<FavScreen> {
   Future<void> _load() async {
     setState(() { _loading = true; _error = null; });
     try {
-      final ids = SessionManager.instance.favoriteIds.value;
-      if (ids.isEmpty) {
-        if (mounted) setState(() { _venues = []; _loading = false; });
-        return;
-      }
-
-      final lat = SessionManager.instance.latitude;
-      final lng = SessionManager.instance.longitude;
-
-      if (lat == null || lng == null) {
-        if (mounted) setState(() { _venues = []; _loading = false; });
-        return;
-      }
-
-      final result = await VenueApi.search(
-        latitude:  lat,
-        longitude: lng,
-        limit:     100,
-      );
-
-      final favVenues = result.venues
-          .where((v) => ids.contains(v.id))
-          .toList();
-
+      // From the server, wherever the venue is — not limited to nearby ones.
+      final favVenues = await FavoritesApi.fetchVenues();
       if (mounted) setState(() { _venues = favVenues; _loading = false; });
     } catch (e) {
       if (mounted) setState(() { _error = friendlyError(e); _loading = false; });

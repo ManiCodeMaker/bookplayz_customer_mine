@@ -61,10 +61,27 @@ class _VenueMapScreenState extends State<VenueMapScreen> {
   // ── Data ───────────────────────────────────────────────────────────────────
 
   Future<void> _loadVenues() async {
-    // Load ALL venues so every pin is visible as the user pans freely.
-    // City / GPS only controls where the camera starts.
+    // Only venues relevant to the selected location: the chosen city if there
+    // is one, otherwise venues around the user's GPS position. Every venue in
+    // the country is only shown when neither is known.
     try {
-      final result = await VenueApi.fetchAll();
+      final selectedCity = _cityArg ?? SessionManager.instance.city;
+      final gpsLat = SessionManager.instance.latitude;
+      final gpsLng = SessionManager.instance.longitude;
+
+      final VenueSearchResult result;
+      if (selectedCity != null && selectedCity.isNotEmpty) {
+        result = await VenueApi.searchByCity(city: selectedCity, limit: 100);
+      } else if (gpsLat != null && gpsLng != null) {
+        result = await VenueApi.search(
+          latitude: gpsLat,
+          longitude: gpsLng,
+          limit: 100,
+          radius: 30,
+        );
+      } else {
+        result = await VenueApi.fetchAll();
+      }
 
       final withCoords = result.venues
           .where((v) => v.latitude != null && v.longitude != null)

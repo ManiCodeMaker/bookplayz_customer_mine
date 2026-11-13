@@ -169,13 +169,28 @@ class VenueApi {
     int limit = 12,
     double radius = 20,
     String? city,
+    int? categoryId,
   }) {
     var url = '${ApiConstants.baseUrl}/venues/search'
         '?page=$page&limit=$limit'
         '&latitude=$latitude&longitude=$longitude'
         '&radius=$radius';
-    if (city != null && city.isNotEmpty) url += '&city=$city';
+    if (city != null && city.isNotEmpty) {
+      url += '&city=${Uri.encodeQueryComponent(city)}';
+    }
+    if (categoryId != null) url += '&categoryId=$categoryId';
     return url;
+  }
+
+  /// Sports that currently have at least one live venue — used for the Sport
+  /// filter and to map a sport name (e.g. from Home) to its category id.
+  static Future<List<Map<String, dynamic>>> fetchSportFilters() async {
+    final res = await ApiService.instance.get(
+      '${ApiConstants.baseUrl}/categories/venue-filters',
+    );
+    return (res['data'] as List<dynamic>? ?? [])
+        .map((e) => Map<String, dynamic>.from(e as Map))
+        .toList();
   }
 
   static Future<List<String>> fetchCities(String q) async {
@@ -189,9 +204,11 @@ class VenueApi {
     required String city,
     int page = 1,
     int limit = 12,
+    int? categoryId,
   }) async {
-    final url = '${ApiConstants.baseUrl}/venues/search'
-        '?page=$page&limit=$limit&city=$city';
+    var url = '${ApiConstants.baseUrl}/venues/search'
+        '?page=$page&limit=$limit&city=${Uri.encodeQueryComponent(city)}';
+    if (categoryId != null) url += '&categoryId=$categoryId';
     final res = await ApiService.instance.get(url);
     final data = res['data'] as Map<String, dynamic>;
     final list = (data['data'] as List<dynamic>)
@@ -204,8 +221,8 @@ class VenueApi {
 
   /// Fetches all venues — used by the map screen so every pin is visible
   /// regardless of where the user pans. No location filter is applied.
-  static Future<VenueSearchResult> fetchAll({int limit = 100}) async {
-    final url = '${ApiConstants.baseUrl}/venues/search?page=1&limit=$limit';
+  static Future<VenueSearchResult> fetchAll({int limit = 100, int page = 1}) async {
+    final url = '${ApiConstants.baseUrl}/venues/search?page=$page&limit=$limit';
     final res = await ApiService.instance.get(url);
     final data = res['data'] as Map<String, dynamic>;
     final list = (data['data'] as List<dynamic>)
@@ -223,6 +240,7 @@ class VenueApi {
     int limit = 12,
     double radius = 20,
     String? city,
+    int? categoryId,
   }) async {
     final res = await ApiService.instance.get(_search(
       latitude: latitude,
@@ -231,6 +249,7 @@ class VenueApi {
       limit: limit,
       radius: radius,
       city: city,
+      categoryId: categoryId,
     ));
     final data = res['data'] as Map<String, dynamic>;
     final list = (data['data'] as List<dynamic>)
@@ -331,6 +350,28 @@ class FavoritesApi {
     final ids = list.map((e) => e as int).toList();
     SessionManager.instance.favoriteIds.value = ids.toSet();
     return ids;
+  }
+
+  /// The user's favourite venues, wherever they are (no distance limit).
+  /// Reads the saved IDs from the server, then pages through the venue list
+  /// collecting those venues so each card keeps its rating, price and photos.
+  static Future<List<VenueModel>> fetchVenues() async {
+    final ids = await fetchIds();
+    if (ids.isEmpty) return [];
+
+    final wanted = ids.toSet();
+    final found = <int, VenueModel>{};
+    var page = 1;
+    while (found.length < wanted.length && page <= 20) {
+      final result = await VenueApi.fetchAll(limit: 50, page: page);
+      for (final v in result.venues) {
+        if (wanted.contains(v.id)) found[v.id] = v;
+      }
+      if (!result.pagination.hasNext) break;
+      page++;
+    }
+    // Keep the server's order for the favourites we found.
+    return [for (final id in ids) if (found.containsKey(id)) found[id]!];
   }
 
   static Future<String> toggle(int venueId) async {

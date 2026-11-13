@@ -28,7 +28,7 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- ── Deep link: https://bookplayz.com/venues/{slug} ── -->
+            <!-- ── Deep link: https://bookplayz.com/venue/{slug} (and legacy /venues/{slug}) ── -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -37,6 +37,10 @@
                     android:scheme="https"
                     android:host="bookplayz.com"
                     android:pathPrefix="/venues/" />
+                <data
+                    android:scheme="https"
+                    android:host="bookplayz.com"
+                    android:pathPrefix="/venue/" />
             </intent-filter>
  
             <!-- ── Custom scheme fallback: bookplayz://venues/{slug} ── -->

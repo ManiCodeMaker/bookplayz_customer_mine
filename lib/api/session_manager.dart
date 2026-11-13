@@ -130,6 +130,10 @@ class SessionManager {
     // Login responses omit profileImage / verified flags — pull the full
     // record in the background.
     refreshUserFromServer();
+
+    // Saved favourites are per-account — load them for the user who just
+    // logged in (previously only done at app start).
+    FavoritesApi.fetchIds().catchError((_) => <int>[]);
   }
 
   /// Refreshes the session user from /auth/me. Best-effort: on failure the
@@ -217,6 +221,7 @@ class SessionManager {
 
   Future<void> clearSession() async {
     userNotifier.value = null;
+    favoriteIds.value = {}; // don't carry one account's favourites to the next
     _accessToken       = null;
     _refreshToken      = null;
     ApiService.instance.clearToken();

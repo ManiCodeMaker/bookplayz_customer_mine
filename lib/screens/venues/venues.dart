@@ -40,8 +40,13 @@ class VenuesScreenState extends State<VenuesScreen> {
   VenueSortType _sortType = VenueSortType.none;
   String? _pendingSportName; // sport requested from Home before venues/categories loaded
 
-  // ── Sport filter options built from fetched data ──
+  // ── Sport filter options (from the server: sports that have live venues) ──
   List<VenueSportOption> _sportOptions = [];
+  bool _sportsLoaded = false;
+  bool _sportsFromServer = false;
+  // Sport asked for from Home that no live venue offers — show "none found"
+  // rather than silently falling back to every venue.
+  String? _noSportName;
 
   final ScrollController _scrollCtrl = ScrollController();
 
@@ -69,6 +74,7 @@ class VenuesScreenState extends State<VenuesScreen> {
   @override
   void initState() {
     super.initState();
+    _loadSportOptions();
     _loadVenues();
     _scrollCtrl.addListener(_onScroll);
     _searchCtrl.addListener(_onSearchChanged);
@@ -84,24 +90,70 @@ class VenuesScreenState extends State<VenuesScreen> {
 
   void refresh() => _loadVenues();
 
+  Future<void> _loadSportOptions() async {
+    try {
+      final list = await VenueApi.fetchSportFilters();
+      if (!mounted) return;
+      setState(() {
+        _sportOptions = list
+            .map((c) => VenueSportOption(
+                  categoryId: c['id'] as int,
+                  name: (c['name'] as String?) ?? '',
+                  image: c['image'] as String?,
+                ))
+            .toList();
+        _sportsFromServer = true;
+        _sportsLoaded = true;
+      });
+    } catch (_) {
+      // Fall back to options built from the venues that get loaded.
+      if (mounted) setState(() => _sportsLoaded = true);
+    }
+    if (_pendingSportName != null && mounted) {
+      selectSportByName(_pendingSportName!);
+    }
+  }
+
+  // Home labels that differ from the category names in the database.
+  static const Map<String, String> _sportAliases = {
+    'SHUTTLE': 'BADMINTON',
+  };
+
   // ── Called from Home when a sport icon is tapped ──
   void selectSportByName(String name) {
-    VenueSportOption? match;
-    for (final o in _sportOptions) {
-      if (o.name.toUpperCase() == name.toUpperCase()) {
-        match = o;
-        break;
-      }
-    }
-    if (match == null) {
-      // Categories aren't loaded yet — resolve once _loadVenues() finishes.
+    if (!_sportsLoaded) {
+      // Sports list is still loading — resolve as soon as it arrives.
       _pendingSportName = name;
       return;
     }
     _pendingSportName = null;
-    setState(() => _selectedCategoryId = match!.categoryId.toString());
-    _applyFilters();
+    final key = (_sportAliases[name.toUpperCase()] ?? name).toUpperCase();
+    VenueSportOption? match;
+    for (final o in _sportOptions) {
+      if (o.name.toUpperCase() == key) {
+        match = o;
+        break;
+      }
+    }
+    setState(() {
+      _selectedCategoryId = match?.categoryId.toString();
+      _noSportName = match == null ? name : null;
+    });
+    _loadVenues();
   }
+
+  String? get _selectedSportLabel {
+    if (_noSportName != null) return _noSportName;
+    if (_selectedCategoryId == null) return null;
+    for (final o in _sportOptions) {
+      if (o.categoryId.toString() == _selectedCategoryId) return o.name;
+    }
+    return null;
+  }
+
+  // City used for every page of the list — keep page 1 and "load more" in sync
+  // so later pages don't fall back to a distance search.
+  String? get _effectiveCity => _selectedCity ?? SessionManager.instance.city;
 
 
 
@@ -159,12 +211,26 @@ class VenuesScreenState extends State<VenuesScreen> {
 
   // ── Load venues ──
   Future<void> _loadVenues({String? city}) async {
+    // A sport nobody offers: show the empty state, don't fetch (an unfiltered
+    // fetch would list every venue).
+    if (_noSportName != null) {
+      setState(() {
+        _allVenues = [];
+        _filtered = [];
+        _hasNext = false;
+        _loading = false;
+        _error = null;
+      });
+      return;
+    }
+
     setState(() {
       _loading = true;
       _error = null;
     });
 
-    final effectiveCity = city ?? _selectedCity ?? SessionManager.instance.city;
+    final effectiveCity = city ?? _effectiveCity;
+    final categoryId = int.tryParse(_selectedCategoryId ?? '');
     final lat = SessionManager.instance.latitude;
     final lng = SessionManager.instance.longitude;
 
@@ -177,12 +243,14 @@ class VenuesScreenState extends State<VenuesScreen> {
           page: 1,
           limit: 12,
           city: effectiveCity,
+          categoryId: categoryId,
         );
       } else if (effectiveCity != null) {
         result = await VenueApi.searchByCity(
           city: effectiveCity,
           page: 1,
           limit: 12,
+          categoryId: categoryId,
         );
       } else {
         setState(() {
@@ -200,9 +268,6 @@ class VenuesScreenState extends State<VenuesScreen> {
         _buildSportOptions();
         _applyFilters();
       });
-      if (_pendingSportName != null) {
-        selectSportByName(_pendingSportName!);
-      }
     } catch (e) {
       setState(() {
         _loading = false;
@@ -215,17 +280,33 @@ class VenuesScreenState extends State<VenuesScreen> {
     if (_loadingMore) return;
     setState(() => _loadingMore = true);
 
-    final lat = SessionManager.instance.latitude!;
-    final lng = SessionManager.instance.longitude!;
+    final lat = SessionManager.instance.latitude;
+    final lng = SessionManager.instance.longitude;
+    final city = _effectiveCity;
+    final categoryId = int.tryParse(_selectedCategoryId ?? '');
 
     try {
-      final result = await VenueApi.search(
-        latitude: lat,
-        longitude: lng,
-        page: _currentPage + 1,
-        limit: 12,
-        city: _selectedCity,
-      );
+      final VenueSearchResult result;
+      if (lat != null && lng != null) {
+        result = await VenueApi.search(
+          latitude: lat,
+          longitude: lng,
+          page: _currentPage + 1,
+          limit: 12,
+          city: city,
+          categoryId: categoryId,
+        );
+      } else if (city != null) {
+        result = await VenueApi.searchByCity(
+          city: city,
+          page: _currentPage + 1,
+          limit: 12,
+          categoryId: categoryId,
+        );
+      } else {
+        setState(() => _loadingMore = false);
+        return;
+      }
       setState(() {
         _allVenues.addAll(result.venues);
         _currentPage++;
@@ -241,6 +322,7 @@ class VenuesScreenState extends State<VenuesScreen> {
 
   // ── Build sport filter options from fetched venues ──
   void _buildSportOptions() {
+    if (_sportsFromServer) return; // server list is already complete
     final seen = <int>{};
     final options = <VenueSportOption>[];
     for (final v in _allVenues) {
@@ -319,8 +401,11 @@ class VenuesScreenState extends State<VenuesScreen> {
         options: _sportOptions,
         selected: _selectedCategoryId,
         onSelect: (id) {
-          setState(() => _selectedCategoryId = id);
-          _applyFilters();
+          setState(() {
+            _selectedCategoryId = id;
+            _noSportName = null;
+          });
+          _loadVenues(); // filter on the server so every page matches the sport
           Navigator.pop(context);
         },
       ),
@@ -522,6 +607,9 @@ Stack(
                   : _filtered.isEmpty
                       ? EmptyVenueState(
                           city: _selectedCity ?? SessionManager.instance.city,
+                          message: _selectedSportLabel != null
+                              ? 'No ${_selectedSportLabel!} venues found'
+                              : null,
                         )
                       : ListView.builder(
                           controller: _scrollCtrl,
