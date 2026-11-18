@@ -135,9 +135,10 @@ class HeroBannerTopBar extends StatelessWidget {
                 padding: const EdgeInsets.only(right: 6),
                 child: GestureDetector(
                   onTap: onResetTap,
+                  behavior: HitTestBehavior.opaque,
                   child: Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.25),
                       shape: BoxShape.circle,

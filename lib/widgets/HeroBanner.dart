@@ -191,17 +191,6 @@ class _HeroBannerState extends State<HeroBanner> {
           // ── 2. Gradient / brush-stroke overlay ───────────────
           _buildOverlay(),
 
-          // ── 3. Top-bar (menu/avatar, search, location, notification) ──
-          HeroBannerTopBar(
-            city: widget.city,
-            onMenuTap: widget.onMenuTap,
-            onNotificationTap: widget.onNotificationTap,
-            onLocationTap: widget.onLocationTap,
-            onResetTap: widget.onResetTap,
-            onSearchTap: widget.onSearchTap,
-            showNotificationBadge: widget.showNotificationBadge,
-          ),
-
           // ── 4. Promo overlay (carousel only, bottom-centre) ───
           if (widget.showCarousel && widget.promoOverlay != null)
             Positioned(
@@ -217,22 +206,38 @@ class _HeroBannerState extends State<HeroBanner> {
               bottom: 40,
               left: 0,
               right: 0,
-              child: Opacity(
-                opacity: _fadeOpacity,
-                child: Center(child: _buildDots()),
+              child: IgnorePointer(
+                child: Opacity(
+                  opacity: _fadeOpacity,
+                  child: Center(child: _buildDots()),
+                ),
               ),
             ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              height: widget.showCarousel ? 60 : 40,
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: widget.showCarousel ? 60 : 40,
+            child: IgnorePointer(
               child: Image.asset(
                 AppImages.brushStrokePanel,
                 fit: BoxFit.fill,
                 alignment: Alignment.topCenter,
               ),
             ),
+          ),
+
+          // ── 3. Top-bar — kept LAST so it is the top-most layer and always
+          // receives taps, even when the banner collapses on scroll. ──
+          HeroBannerTopBar(
+            city: widget.city,
+            onMenuTap: widget.onMenuTap,
+            onNotificationTap: widget.onNotificationTap,
+            onLocationTap: widget.onLocationTap,
+            onResetTap: widget.onResetTap,
+            onSearchTap: widget.onSearchTap,
+            showNotificationBadge: widget.showNotificationBadge,
+          ),
         ],
       ),
     );

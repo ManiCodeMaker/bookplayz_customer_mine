@@ -203,7 +203,7 @@ class _BookingHomeState extends State<_BookingHome> {
                 style: TextStyle(
                   fontFamily: 'Anton',
                   fontSize: 20,
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w400, // Anton has a single weight; w700 causes faux-bold smearing
                   color: AppColors.white,
                 ),
               ),
